@@ -11,6 +11,10 @@ calc_uncorrected_tumor_CL_distance <- function(TCGA_mat, CCLE_mat, alignment) {
   uncorrected_comb_obj <- create_Seurat_object(rbind(TCGA_mat, CCLE_mat),
                                                alignment)
   uncorrected_tumor_CL_dist <- calc_tumor_CL_dist(uncorrected_comb_obj)
+  
+  rownames(uncorrected_tumor_CL_dist) <- rownames(TCGA_mat)
+  colnames(uncorrected_tumor_CL_dist) <- rownames(CCLE_mat)
+  
   return(uncorrected_tumor_CL_dist)
 }
 
@@ -122,18 +126,19 @@ plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumo
   }
   
   dist_df <- cbind.data.frame(tumor_names, CL_names, dist_list, tissue_types)
+  dist_df$tissue_types <- gsub("_", " ", dist_df$tissue_types)
+  
   mean_dist <- aggregate(dist_df$dist_list, list(dist_df$tissue_types), 
                          FUN = quantile, probs = 0.25) %>% dplyr::arrange(x)
   
   mean_dist$Group.1 <- rev(mean_dist$Group.1)
-  dist_df$tissue_types <- gsub("_", " ", dist_df$tissue_types)
   dist_df$tissue_types <- factor(dist_df$tissue_types, levels = mean_dist$Group.1)
   
   
   uncorrect_tumor_dist_spread <- ggplot2::ggplot(dplyr::filter(dist_df, tissue_types != 'all'),
                                                  ggplot2::aes(x = dist_list, y = tissue_types, fill = tissue_types)) + 
     ggridges::geom_density_ridges(alpha=0.8) +
-    ggplot2::theme_ridges() + 
+    ggridges::theme_ridges() + 
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = "none",
           text=ggplot2::element_text(size=6),

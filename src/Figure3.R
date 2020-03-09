@@ -121,7 +121,7 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
   tumor_dist_spread <- ggplot2::ggplot(dplyr::filter(dist_df, tissue_types != 'all'),
                                        ggplot2::aes(x = dist_list, y = tissue_types, fill = tissue_types)) +
     ggridges::geom_density_ridges(alpha=0.8) +
-    ggplot2::theme_ridges() +
+    ggridges::theme_ridges() +
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = "none", text=ggplot2::element_text(size=6),
           axis.text = ggplot2::element_text(size=6)) +
