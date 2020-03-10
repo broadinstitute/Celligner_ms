@@ -1,5 +1,5 @@
 # Celligner_ms
-This repo contains code associated with our manuscript describing Celligner, our method for aligning tumor and cell line transcriptional profiles.
+This repo contains code associated with the manuscript describing Celligner, our method for aligning tumor and cell line transcriptional profiles.
 
 ## Data
 
