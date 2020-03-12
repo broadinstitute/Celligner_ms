@@ -1,5 +1,5 @@
 # Celligner_ms
-This repo contains code associated with our manuscript describing Celligner, our method for aligning tumor and cell line transcriptional profiles.
+This repo contains code associated with the manuscript describing Celligner, our method for aligning tumor and cell line transcriptional profiles.
 
 ## Data
 
@@ -19,8 +19,8 @@ global_params.R: Define global params shared across analysis scripts. Includes p
 
 - analysis_helpers.R: Define helper functions used throughout the analysis and creation of figures
 - Celligner_helpers.R : Define helper functions used for the Celligner alignment method
-- Celligner_methods.R : Functions to run the various stages and entire Celligner alignment method
 
 ### Analysis/fig-gen
 
-There are separate scripts for each of the main and supplementary figure panels within the manuscript.
+- Celligner_methods.R : Functions to run the various stages and entire Celligner alignment method
+- There are separate scripts for each of the main and supplementary figure panels within the manuscript.
