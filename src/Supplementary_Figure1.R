@@ -8,9 +8,9 @@ source(here::here('src', 'global_params.R'))
 run_COMBAT_correction <- function(TCGA_mat, CCLE_mat, alignment) {
   library(sva)
   dat <- rbind(TCGA_mat, as.matrix(CCLE_mat))
-  cov_df <- alignment[match(alignment$sampleID, rownames(dat)), c('type', 'tissue', 'sampleID')] %>% 
-    dplyr::filter(!is.na(tissue), sampleID %in% rownames(dat))
-  dat <- dat[cov_df$sampleID, , drop = FALSE]
+  cov_df <- alignment[match(alignment$sampleID_CCLE_Name, rownames(dat)), c('type', 'lineage', 'sampleID_CCLE_Name')] %>% 
+    dplyr::filter(!is.na(lineage), sampleID_CCLE_Name %in% rownames(dat))
+  dat <- dat[cov_df$sampleID_CCLE_Name, , drop = FALSE]
   mod = model.matrix(~1, data=cov_df)
   
   zero_var_genes <- which(apply(t(dat), 1, var)==0)
@@ -42,14 +42,13 @@ plot_COMBAT_corrected <- function(combat_output, alignment) {
                                   min.dist = global$umap_min_dist,
                                   metric = global$distance_metric, verbose=F)
   
-  combat_res <- Seurat::Embeddings(combat_obj, reduction = reduction.use) %>%
+  combat_res <- Seurat::Embeddings(combat_obj, reduction = global$reduction.use) %>%
     as.data.frame() %>%
     magrittr::set_colnames(c('UMAP_1', 'UMAP_2')) %>%
-    tibble::rownames_to_column(var = 'sampleID') %>%
-    dplyr::left_join(comb_ann[,c('sampleID','tissue', 'subtype', 'type')], by = 'sampleID')
+    cbind.data.frame(alignment[,c('sampleID_CCLE_Name','lineage', 'subtype', 'type')])
   
   combat_plot <- ggplot2::ggplot(combat_res, 
-                                 ggplot2::aes(UMAP_1, UMAP_2, fill=tissue, size=type)) +
+                                 ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, size=type)) +
     ggplot2::geom_point(alpha=0.6, pch=21, color='white') +
     ggplot2::geom_point(data = dplyr::filter(alignment, type=='CL'), color='#333333', pch=21, alpha=0.6) +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) + 

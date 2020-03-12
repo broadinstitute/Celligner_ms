@@ -100,7 +100,7 @@ modified_k_tumor_plot <- function() {
 # to produce the input to this method
 remove_skin_tumors_plot <- function(rm_skin_tumors_alignment) {
   rm_skin_tumors <- ggplot2::ggplot(rm_skin_tumors_alignment, 
-                                    ggplot2::aes(UMAP_1, UMAP_2, fill=tissue=='skin', color=type, size=type)) +
+                                    ggplot2::aes(UMAP_1, UMAP_2, fill=lineage=='skin', color=type, size=type)) +
     ggplot2::geom_point(alpha=0.7, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) +
@@ -117,10 +117,10 @@ remove_skin_tumors_plot <- function(rm_skin_tumors_alignment) {
 
 # Supplementary Figure 6d
 remove_skin_tumors_highlight <- function(rm_skin_tumors_alignment) {
-  rm_skin_tumors_alignment$tissue <- gsub("_", " ", rm_skin_tumors_alignment$tissue)
+  rm_skin_tumors_alignment$lineage <- gsub("_", " ", rm_skin_tumors_alignment$lineage)
   rm_skin_tumors_highlight <- ggplot2::ggplot(dplyr::filter(rm_skin_tumors_alignment,
                                             UMAP_1 < 10 & UMAP_1 > 6 & UMAP_2 < -4.8 & UMAP_2 > -8),
-                                            ggplot2::aes(UMAP_1, UMAP_2, fill=tissue, color=type, size=type)) +
+                                            ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, color=type, size=type)) +
     ggplot2::geom_point(alpha=0.7, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=2, `tumor`=1.5)) +
@@ -130,7 +130,7 @@ remove_skin_tumors_highlight <- function(rm_skin_tumors_alignment) {
     ggplot2::theme(legend.position = 'right',
           text=ggplot2::element_text(size=6),
           axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="tissue") +
+    ggplot2::labs(fill="lineage") +
     ggplot2::guides(fill=ggplot2::guide_legend(ncol=2))
   
   return(rm_skin_tumors_highlight)
@@ -141,7 +141,7 @@ remove_skin_tumors_highlight <- function(rm_skin_tumors_alignment) {
 # to produce the input to this method
 remove_skin_CLs_plot <- function(rm_skin_CLs_alignment) {
   rm_skin_CLs <- ggplot2::ggplot(rm_skin_CLs_alignment, 
-                                 ggplot2::aes(UMAP_1, UMAP_2, fill=tissue=='skin', color=type, size=type)) + 
+                                 ggplot2::aes(UMAP_1, UMAP_2, fill=lineage=='skin', color=type, size=type)) + 
     ggplot2::geom_point(alpha=0.7, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) +
@@ -158,10 +158,10 @@ remove_skin_CLs_plot <- function(rm_skin_CLs_alignment) {
 
 # Supplementary Figure 6e
 remove_skin_CLs_highlight <- function(rm_skin_CLs_alignment) {
-  rm_skin_CLs_alignment$tissue <- gsub("_", " ", rm_skin_CLs_alignment$tissue)
+  rm_skin_CLs_alignment$lineage <- gsub("_", " ", rm_skin_CLs_alignment$lineage)
   rm_skin_CLs_highlight <- ggplot2::ggplot(dplyr::filter(rm_skin_CLs_alignment, 
                                          UMAP_1 < 11 & UMAP_1 > 6 & UMAP_2 < 5 & UMAP_2 > 1),
-                                         ggplot2::aes(UMAP_1, UMAP_2, fill=tissue, color=type, size=type)) +
+                                         ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, color=type, size=type)) +
     ggplot2::geom_point(alpha=0.7, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=2, `tumor`=1.5)) +

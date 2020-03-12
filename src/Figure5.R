@@ -31,22 +31,22 @@ plot_undifferentiated_cluster <- function(alignment, cluster_selected = c(12,28)
 # figure 5b
 undifferentiated_cluster_CL_composition <- function(alignment, cluster_selected=c(12,28)) {
   CL_count_data <- dplyr::filter(alignment, type=='CL')
-  CL_count_data$tissue <- gsub("engineered_","", CL_count_data$tissue)
-  CL_count_data$tissue <- factor(CL_count_data$tissue, levels = unique(CL_count_data$tissue))
-  CL_cluster_composition_data <- dplyr::filter(CL_count_data, cluster %in% cluster_selected)$tissue %>%
+  CL_count_data$lineage <- gsub("engineered_","", CL_count_data$lineage)
+  CL_count_data$lineage <- factor(CL_count_data$lineage, levels = unique(CL_count_data$lineage))
+  CL_cluster_composition_data <- dplyr::filter(CL_count_data, cluster %in% cluster_selected)$lineage %>%
     table() %>%
     as.data.frame()
-  CL_counts <- dplyr::filter(CL_count_data, !cluster %in% cluster_selected)$tissue %>% 
+  CL_counts <- dplyr::filter(CL_count_data, !cluster %in% cluster_selected)$lineage %>% 
     table() %>%
     as.data.frame()
-  colnames(CL_cluster_composition_data) <- c("tissue", "in cluster")
-  colnames(CL_counts) <- c("tissue", 'other')
-  CL_cluster_composition_data <- merge(CL_cluster_composition_data, CL_counts, by='tissue')
+  colnames(CL_cluster_composition_data) <- c("lineage", "in cluster")
+  colnames(CL_counts) <- c("lineage", 'other')
+  CL_cluster_composition_data <- merge(CL_cluster_composition_data, CL_counts, by='lineage')
   CL_cluster_composition_data <- reshape2::melt(CL_cluster_composition_data)
-  CL_cluster_composition_data$tissue <- gsub("_", " ", CL_cluster_composition_data$tissue)
+  CL_cluster_composition_data$lineage <- gsub("_", " ", CL_cluster_composition_data$lineage)
   CL_cluster_composition_data$variable <- factor(CL_cluster_composition_data$variable, levels = c('other', "in cluster"))
   
-  CL_cluster_composition_plot <- ggplot2::ggplot(data=CL_cluster_composition_data, ggplot2::aes(x=tissue, y=value, fill=variable)) +
+  CL_cluster_composition_plot <- ggplot2::ggplot(data=CL_cluster_composition_data, ggplot2::aes(x=lineage, y=value, fill=variable)) +
     ggplot2::geom_bar(stat="identity") +
     ggplot2::theme_classic() + 
     ggplot2::theme(legend.position = 'left',
@@ -65,9 +65,9 @@ undifferentiated_cluster_CL_composition <- function(alignment, cluster_selected=
 # The CRISPR data used can be found on depmap.org. The data used is DepMap Public 19Q4 Achilles_gene_effect.csv
 SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
   int_cell_lines <- intersect(rownames(CCLE_mat), rownames(CRISPR))
-  cur_cell_lines <- dplyr::filter(alignment, type=='CL' & tissue == 'skin')$sampleID
+  cur_cell_lines <- dplyr::filter(alignment, type=='CL' & lineage == 'skin')$sampleID
 
-  mel_cluster <- dplyr::filter(alignment, tissue=='skin')$cluster %>% 
+  mel_cluster <- dplyr::filter(alignment, lineage=='skin')$cluster %>% 
     table()
     as.data.frame() %>%
     dplyr::arrange(dplyr::desc(Freq)) %>%
@@ -82,8 +82,8 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
   colnames(sox10_dep_exp) <- c("expression", "gene_effect", "cur_lineage")
   sox10_dep_exp$`skin clusters` <- "other samples"
   sox10_dep_exp[dplyr::filter(alignment, sampleID %in% int_cell_lines & cluster %in% mel_cluster)$sampleID,'skin clusters'] <- "melanoma"
-  sox10_dep_exp[dplyr::filter(alignment, cluster %in% c(12,28) & tissue=='skin' & sampleID %in% int_cell_lines)$sampleID,'skin clusters'] <- "undifferentiated"
-  sox10_dep_exp[dplyr::filter(alignment, !cluster %in% c(12,28, mel_cluster) & tissue=='skin' & sampleID %in% int_cell_lines)$sampleID,'skin clusters'] <- "other"
+  sox10_dep_exp[dplyr::filter(alignment, cluster %in% c(12,28) & lineage=='skin' & sampleID %in% int_cell_lines)$sampleID,'skin clusters'] <- "undifferentiated"
+  sox10_dep_exp[dplyr::filter(alignment, !cluster %in% c(12,28, mel_cluster) & lineage=='skin' & sampleID %in% int_cell_lines)$sampleID,'skin clusters'] <- "other"
 
   sox10_dep_exp$`skin clusters` <- as.factor(sox10_dep_exp$`skin clusters`)
 
@@ -113,9 +113,9 @@ dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4
   other_dep_exp <- cbind.data.frame(CCLE_mat[int_cell_lines,cur_gene_ensembl],
                                     CRISPR[int_cell_lines, cur_gene_symbol],
                                     ifelse(int_cell_lines %in% dplyr::filter(alignment, cluster %in% c(12,28) &
-                                                                        tissue == cur_type)$sampleID,
+                                                                               lineage == cur_type)$sampleID,
                                            'undifferentiated', cur_type),
-                                    int_cell_lines %in% dplyr::filter(alignment, tissue == cur_type)$sampleID)
+                                    int_cell_lines %in% dplyr::filter(alignment, lineage == cur_type)$sampleID)
   
   colnames(other_dep_exp) <- c("expression", "gene_effect", "clusters", "cur_lineage")
   
@@ -146,7 +146,7 @@ undifferentiated_DE_analysis <- function(aligment, clusters = c(12,28), CCLE_cou
     set_names(dplyr::filter(alignment, type=='CL')$sampleID)
   
   covars <- dplyr::filter(alignment, type=='CL') %>% 
-    dplyr::select(sampleID, tissue) %>%
+    dplyr::select(sampleID, lineage) %>%
     tibble::column_to_rownames(var = 'sampleID')
   
   cell_line_info <- dplyr::filter(alignment, type=='CL')
@@ -161,8 +161,8 @@ undifferentiated_DE_analysis <- function(aligment, clusters = c(12,28), CCLE_cou
   d <- edgeR::calcNormFactors(d, method='TMM')
   lcpm <- edgeR::cpm(d, log=TRUE)
   
-  design <- model.matrix(~0 + group + tissue, d$samples)
-  colnames(design) <- gsub("tissue", "", colnames(design))
+  design <- model.matrix(~0 + group + lineage, d$samples)
+  colnames(design) <- gsub("lineage", "", colnames(design))
   contr.matrix <- limma::makeContrasts(isUndifferentiated = groupTRUE-groupFALSE, levels=colnames(design))
   vfit <- limma::lmFit(lcpm, design)
   vfit <- limma::contrasts.fit(vfit, contrasts=contr.matrix)
@@ -278,7 +278,7 @@ run_differential_drug_sensitivities <- function(alignment,
   # fit linear model
   lmstats_out_chemical_prism <- run_lm_stats_limma(mat = prism_data_formatted_finally[shared_cell_lines, cpds_to_test], 
                                                          vec = is_undifferentiated, 
-                                                         covars = alignment[shared_cell_lines,'tissue'])
+                                                         covars = alignment[shared_cell_lines,'lineage'])
   
  return(lmstats_out_chemical_prism)
 }
@@ -331,7 +331,7 @@ run_differential_dependency_analysis <- function(CRISPR, alignment, clusters = c
   vec <- (dplyr::filter(alignment, type=='CL')$cluster %in% clusters) %>%
     set_names(dplyr::filter(alignment, type=='CL')$sampleID)
   covars <- dplyr::filter(alignment, type=='CL') %>% 
-    dplyr::select(sampleID, tissue) %>%
+    dplyr::select(sampleID, lineage) %>%
     tibble::column_to_rownames(var = 'sampleID')
   
   common_CLs <- intersect(rownames(CRISPR), names(vec))

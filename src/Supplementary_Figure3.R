@@ -8,7 +8,7 @@ source(here::here('src', 'global_params.R'))
 # re-ran run_Celligner without running the run_MNN step
 # to produce the input to this method
 plot_cPCA_only_output <- function(cPCA_only) {
-  cPCA_only_plot <- ggplot2::ggplot(cPCA_only, ggplot2::aes(UMAP_1, UMAP_2, fill=tissue, size=type, color =type)) +
+  cPCA_only_plot <- ggplot2::ggplot(cPCA_only, ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, size=type, color =type)) +
     ggplot2::geom_point(alpha=0.6, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=1, `tumor`=0.75)) +
@@ -38,12 +38,12 @@ MNN_heatmap <- function(mnn_vect, gene_stats, TCGA_ann, filename) {
     dplyr::arrange(dplyr::desc(abs(diff_mean))) %>% 
     head(50)
   
-  tissue_order <- TCGA_ann$primary_site
+  tissue_order <- TCGA_ann$lineage
   names(tissue_order) <- TCGA_ann$sampleID
   tissue_order <- tissue_order[order(tissue_order)]
   tissue_annot <- as.data.frame(tissue_order)
   rownames(tissue_annot) <- names(tissue_order)
-  colnames(tissue_annot) <- 'tissue'
+  colnames(tissue_annot) <- 'lineage'
   pheatmap::pheatmap(mnn_vect[names(tissue_order), top_mnn_genes$Gene],
            show_rownames = FALSE, 
            labels_col = top_mnn_genes$Symbol,
@@ -96,7 +96,7 @@ MNN_GSEA_table <- function(mnn_vect, gene_stats, filename) {
 plot_MNN_only_output <- function(MNN_only) {
   
   MNN_only_plot <- ggplot2::ggplot(MNN_only, 
-                                   ggplot2::aes(UMAP_1, UMAP_2, fill=tissue, size=type, color = type)) +
+                                   ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, size=type, color = type)) +
     ggplot2::geom_point(alpha=0.6, pch=21) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) + 
     ggplot2::scale_size_manual(values=c(`CL`=1, `tumor`=0.75)) +

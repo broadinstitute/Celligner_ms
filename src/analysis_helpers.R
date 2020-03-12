@@ -37,12 +37,12 @@ choose_eig_sign <- function(df, positive_for = 'tumor') {
 cell_line_tumor_class <- function(x, dist_mat, ann_mat, k=25) {
   names(x) <- rownames(dist_mat)
   x <- sort(x)
-  tumor_type <- dplyr::filter(ann_mat, sampleID %in% names(x[1:k]))$tissue %>%
+  tumor_type <- dplyr::filter(ann_mat, sampleID %in% names(x[1:k]))$lineage %>%
     table() %>%
     as.data.frame() %>%
     dplyr::arrange(dplyr::desc(Freq)) %>%
     head(1) %>%
-    .[['Var1']]
+    .[['.']] %>% as.character()
   
   return(tumor_type)
 }

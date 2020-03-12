@@ -18,33 +18,31 @@ get_cell_line_tumor_class <- function(tumor_CL_dist, alignment) {
 # figure 3a
 cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
   cl_tissue_type <- dplyr::filter(alignment, type=='CL')
-  cl_tissue_type[grep('rhabdomyosarcoma', cl_tissue_type$subtype),'tissue'] <- 'rhabdomyosarcoma'
+ #cl_tissue_type[grep('rhabdomyosarcoma', cl_tissue_type$subtype),'tissue'] <- 'rhabdomyosarcoma'
   rownames(cl_tissue_type) <- cl_tissue_type$sampleID
-  classification_freq <- table(cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_dist),'tissue']) %>% as.data.frame()
+  classification_freq <- table(cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_dist),'lineage']) %>% as.data.frame()
   classification_freq <- reshape2::dcast(classification_freq, cl_tumor_classes ~ Var2, value.var = 'Freq') %>%
     tibble::column_to_rownames('cl_tumor_classes')
-  print(setdiff(intersect(unique(dplyr::filter(alignment, type=='CL')$tissue),
-                          unique(dplyr::filter(alignment, type=='tumor')$tissue)), 
+  print(setdiff(intersect(unique(dplyr::filter(alignment, type=='CL')$lineage),
+                          unique(dplyr::filter(alignment, type=='tumor')$lineage)), 
                 rownames(classification_freq)))
   
   thyroid_tumor <- rep(0, ncol(classification_freq))
-  classification_freq <- rbind(classification_freq,thyroid= thyroid_tumor) 
+  classification_freq <- rbind(classification_freq,`thyroid`= thyroid_tumor) 
   common_types <- intersect(rownames(classification_freq), colnames(classification_freq))
-  common_types_tumor <- c(common_types, 'brain', 'neuroblastoma', 'leukemia', 'lymphoma')
-  common_types_CL <- c(common_types, 'central_nervous_system', 'peripheral_nervous_system', 'blood', 'lymphocyte')
   
-  prop_agree <- sum(diag(as.matrix(classification_freq[common_types_tumor, common_types_CL])))/sum(as.matrix(classification_freq[common_types_tumor, common_types_CL]))
+  prop_agree <- sum(diag(as.matrix(classification_freq[common_types, common_types])))/sum(as.matrix(classification_freq[common_types, common_types]))
   
   for(i in 1:ncol(classification_freq)) {
     classification_freq[,i] <- classification_freq[,i]/sum(classification_freq[,i])
   }
   
   
-  agreement <- diag(as.matrix(classification_freq[common_types_tumor, common_types_CL]))
+  agreement <- diag(as.matrix(classification_freq[common_types, common_types]))
   agreement_CL <- agreement
-  names(agreement_CL) <- common_types_CL
+  names(agreement_CL) <- common_types
   agreement_tumor <- agreement
-  names(agreement_tumor) <- common_types_tumor
+  names(agreement_tumor) <- common_types
   
   agreement_CL <- base::sort(agreement_CL, decreasing=T)
   agreement_tumor <- base::sort(agreement_tumor, decreasing=T)
@@ -78,22 +76,20 @@ cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
 # figure 3b
 # input files included in Supplementary data
 cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
-  alignment$compare_types <- alignment$tissue
-  alignment[which(alignment$tissue=='central_nervous_system'),'compare_types'] <- 'brain'
-  alignment[which(alignment$tissue=='peripheral_nervous_system'),'compare_types'] <- 'neuroblastoma'
-  alignment[which(alignment$tissue=='lymphocyte'),'compare_types'] <- 'lymphoma'
+  alignment$compare_types <- alignment$lineage
   alignment[which(alignment$subtype=='Ewing sarcoma'),'compare_types'] <- 'Ewing sarcoma'
   alignment[which(alignment$subtype=='osteosarcoma'),'compare_types'] <- 'osteosarcoma'
+  alignment[grep('rhabdomyosarcoma', alignment$subtype),'compare_types'] <- 'rhabdomyosarcoma'
   alignment[which(alignment$subtype=='uveal melanoma'),'compare_types'] <- 'uveal melanoma'
   alignment[which(alignment$subtype=='acute myeloid leukemia'),'compare_types'] <- 'acute myeloid leukemia'
   alignment[grep('acute lymphoblastic leukemia', alignment$subtype),'compare_types'] <- 'acute lymphoblastic leukemia'
-  alignment[dplyr::filter(alignment, tissue=='breast')$sampleID[grep('basal', dplyr::filter(alignment, tissue=='breast')$subtype)],'compare_types'] <- 'basal breast'
-  alignment[dplyr::filter(alignment, tissue=='breast')$sampleID[grep('luminal', dplyr::filter(alignment, tissue=='breast')$subtype)],'compare_types'] <- 'luminal breast'
+  alignment[dplyr::filter(alignment, lineage=='breast')$sampleID[grep('basal', dplyr::filter(alignment, lineage=='breast')$subtype)],'compare_types'] <- 'basal breast'
+  alignment[dplyr::filter(alignment, lineage=='breast')$sampleID[grep('luminal', dplyr::filter(alignment, lineage=='breast')$subtype)],'compare_types'] <- 'luminal breast'
   
   
   common_cancer_types <- intersect(dplyr::filter(alignment, type=='tumor')$compare_types, 
                                    dplyr::filter(alignment, type=='CL')$compare_types)
-  common_cancer_types <- setdiff(common_cancer_types, c('eye', 'bone', 'breast'))
+  common_cancer_types <- setdiff(common_cancer_types, c('eye', 'bone', 'breast', 'blood'))
   
   tumor_names <- character()
   CL_names <- character()
@@ -126,7 +122,7 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
     ggplot2::theme(legend.position = "none", text=ggplot2::element_text(size=6),
           axis.text = ggplot2::element_text(size=6)) +
     ggplot2::xlab("distance between cell lines and tumors") +
-    ggplot2::ylab('tissue')
+    ggplot2::ylab('cancer type')
   
   return(tumor_dist_spread)
   
