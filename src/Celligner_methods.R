@@ -13,6 +13,7 @@ source(here::here('src', 'global_params.R'))
 # The annotation file, Celligner_info is available in figshare for the paper here: https://figshare.com/articles/Celligner_data/11965269
 # This file contains the sampleIDs for the cell line and tumors, as well as additional info about samples (lineage, tumor purity, etc), 
 # which is used for plotting the data, but not for the method itself
+# if set to NULL then the annotation file is created using just the rownames from the TCGA and CCLE matrices
 load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'CCLE_mat.csv', annotation_file = 'Celligner_info.csv') {
   
   TCGA_mat <-  readr::read_csv(file.path(data_dir, tumor_file)) %>% 
