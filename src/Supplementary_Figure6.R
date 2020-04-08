@@ -171,7 +171,7 @@ remove_skin_CLs_highlight <- function(rm_skin_CLs_alignment) {
     ggplot2::theme(legend.position = 'right',
           text=ggplot2::element_text(size=6), 
           axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="tissue") +
+    ggplot2::labs(fill="lineage") +
     ggplot2::guides(fill=ggplot2::guide_legend(ncol=2))
   
   return(rm_skin_CLs_highlight)

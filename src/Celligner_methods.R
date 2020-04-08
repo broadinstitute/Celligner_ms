@@ -10,24 +10,39 @@ source(here::here('src', 'global_params.R'))
 # TCGA_mat source: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443
 # CCLE_mat source: depmap.org DepMap Public 19Q4 CCLE_expression_full.csv
 # hgnc.complete.set source: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt
-load_data <- function(data_dir) {
+# The annotation file, Celligner_info is available in figshare for the paper here: https://figshare.com/articles/Celligner_data/11965269
+# This file contains the sampleIDs for the cell line and tumors, as well as additional info about samples (lineage, tumor purity, etc), 
+# which is used for plotting the data, but not for the method itself
+load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'CCLE_mat.csv', annotation_file = 'Celligner_info.csv') {
   
-  TCGA_mat <-  readr::read_csv(file.path(data_dir, "TCGA_mat.csv")) %>% 
+  TCGA_mat <-  readr::read_csv(file.path(data_dir, tumor_file)) %>% 
     as.data.frame() %>%
     tibble::column_to_rownames('X1') %>%
     as.matrix()
   
-  CCLE_mat <-  readr::read_csv(file.path(data_dir, "CCLE_mat.csv")) %>% 
+  CCLE_mat <-  readr::read_csv(file.path(data_dir, cell_line_file)) %>% 
     as.data.frame() %>%
     tibble::column_to_rownames('X1') %>%
     as.matrix()
   
 
-  ann <- readr::read_csv(file.path(data_dir, "alignment.csv"))
-  TCGA_ann <- dplyr::filter(ann, type=='tumor') %>% 
-    dplyr::select(-UMAP_1, -UMAP_2, -cluster)
-  CCLE_ann <- dplyr::filter(ann, type=='CL') %>% 
-    dplyr::select(-UMAP_1, -UMAP_2, -cluster)
+  # 
+  ann <- data.table::fread(file.path(data_dir, annotation_file)) %>% as.data.frame()
+  TCGA_ann <- dplyr::filter(ann, type=='tumor')
+  CCLE_ann <- dplyr::filter(ann, type=='CL')
+  if('UMAP_1' %in% colnames(ann)) {
+    TCGA_ann <- TCGA_ann %>% 
+      dplyr::select(-UMAP_1)
+  }
+  if('UMAP_2' %in% colnames(ann)) {
+    TCGA_ann <- TCGA_ann %>% 
+      dplyr::select(-UMAP_2)
+  }
+  if('cluster' %in% colnames(ann)) {
+    TCGA_ann <- TCGA_ann %>% 
+      dplyr::select(-cluster)
+  }
+  
   
   
   hgnc.complete.set <- read_csv(file.path(data_dir, "hgnc.complete.set.csv"))

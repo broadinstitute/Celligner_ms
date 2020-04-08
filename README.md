@@ -3,7 +3,11 @@ This repo contains code associated with the manuscript describing Celligner, our
 
 ## Data
 
-The data associated with this analysis will be made available shortly.
+The data associated with this analysis is available from public data repositiories, supplementary data files associated with the manuscript (https://www.biorxiv.org/content/10.1101/2020.03.25.008342v1.supplementary-material), and in the figshare: https://figshare.com/articles/Celligner_data/11965269.
+
+The cell line data used as input can be found at depmap.org (the file is DepMap Public 19Q4 CCLE_expression_full.csv)
+
+The tumor data used as input is from the treehouse dataset, available here: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443
 
 ## Organization of repo
 
