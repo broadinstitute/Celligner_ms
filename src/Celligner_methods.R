@@ -26,23 +26,29 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'C
     as.matrix()
   
 
-  # 
-  ann <- data.table::fread(file.path(data_dir, annotation_file)) %>% as.data.frame()
-  TCGA_ann <- dplyr::filter(ann, type=='tumor')
-  CCLE_ann <- dplyr::filter(ann, type=='CL')
-  if('UMAP_1' %in% colnames(ann)) {
-    TCGA_ann <- TCGA_ann %>% 
-      dplyr::select(-UMAP_1)
+  if(is.null(annotation_file)) {
+    ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
+                      tissue = NA,
+                      subtype = NA,
+                      `Primary/Metastasis` = NA,
+                      type = c(rep('tumor', nrow(TCGA_mat)), rep('CL', nrow(CCLE_mat))))
+  } else {
+    ann <- data.table::fread(file.path(data_dir, annotation_file)) %>% as.data.frame()
+    TCGA_ann <- dplyr::filter(ann, type=='tumor')
+    CCLE_ann <- dplyr::filter(ann, type=='CL')
+    if('UMAP_1' %in% colnames(ann)) {
+      TCGA_ann <- TCGA_ann %>% 
+        dplyr::select(-UMAP_1)
+    }
+    if('UMAP_2' %in% colnames(ann)) {
+      TCGA_ann <- TCGA_ann %>% 
+        dplyr::select(-UMAP_2)
+    }
+    if('cluster' %in% colnames(ann)) {
+      TCGA_ann <- TCGA_ann %>% 
+        dplyr::select(-cluster)
+    }
   }
-  if('UMAP_2' %in% colnames(ann)) {
-    TCGA_ann <- TCGA_ann %>% 
-      dplyr::select(-UMAP_2)
-  }
-  if('cluster' %in% colnames(ann)) {
-    TCGA_ann <- TCGA_ann %>% 
-      dplyr::select(-cluster)
-  }
-  
   
   
   hgnc.complete.set <- read_csv(file.path(data_dir, "hgnc.complete.set.csv"))
