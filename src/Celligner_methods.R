@@ -9,23 +9,37 @@ source(here::here('src', 'global_params.R'))
 # load tumor and cell line expression data from local directory
 # TCGA_mat source: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443
 # CCLE_mat source: depmap.org DepMap Public 19Q4 CCLE_expression_full.csv
-# hgnc.complete.set source: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt
+# hgnc_complete_set source: the version used in the paper can be found in figshare for the paper here: https://figshare.com/articles/Celligner_data/11965269
+# the file was originally downloaded from here: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt
 # The annotation file, Celligner_info is available in figshare for the paper here: https://figshare.com/articles/Celligner_data/11965269
 # This file contains the sampleIDs for the cell line and tumors, as well as additional info about samples (lineage, tumor purity, etc), 
 # which is used for plotting the data, but not for the method itself
 # if set to NULL then the annotation file is created using just the rownames from the TCGA and CCLE matrices
-load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'CCLE_mat.csv', annotation_file = 'Celligner_info.csv') {
+load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'CCLE_mat.csv', 
+                      annotation_file = 'Celligner_info.csv', hgnc_file = "hgnc_complete_set_7.24.2018.txt") {
+  hgnc.complete.set <- data.table::fread(file.path(data_dir, hgnc_file)) %>% as.data.frame()
   
-  TCGA_mat <-  readr::read_csv(file.path(data_dir, tumor_file)) %>% 
+  
+  TCGA_mat <-  readr::read_tsv(file.path(data_dir, tumor_file)) %>% 
     as.data.frame() %>%
-    tibble::column_to_rownames('X1') %>%
-    as.matrix()
+    tibble::column_to_rownames('Gene') %>%
+    as.matrix() %>% 
+    t()
+
+  common_genes <- intersect(colnames(TCGA_mat), hgnc.complete.set$symbol)
+  TCGA_mat <- TCGA_mat[,common_genes]
+  hgnc.complete.set <- filter(hgnc.complete.set, symbol %in% common_genes)
+  hgnc.complete.set <- hgnc.complete.set[!duplicated(hgnc.complete.set$symbol),]
+  rownames(hgnc.complete.set) <- hgnc.complete.set$symbol
+  hgnc.complete.set <- hgnc.complete.set[common_genes,]
+  colnames(TCGA_mat) <- hgnc.complete.set$ensembl_gene_id
   
   CCLE_mat <-  readr::read_csv(file.path(data_dir, cell_line_file)) %>% 
     as.data.frame() %>%
     tibble::column_to_rownames('X1') %>%
     as.matrix()
   
+  colnames(CCLE_mat) <- stringr::str_match(colnames(CCLE_mat), '\\((.+)\\)')[,2]
 
   if(is.null(annotation_file)) {
     ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
@@ -35,24 +49,23 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'C
                       type = c(rep('tumor', nrow(TCGA_mat)), rep('CL', nrow(CCLE_mat))))
   } else {
     ann <- data.table::fread(file.path(data_dir, annotation_file)) %>% as.data.frame()
-    TCGA_ann <- dplyr::filter(ann, type=='tumor')
-    CCLE_ann <- dplyr::filter(ann, type=='CL')
     if('UMAP_1' %in% colnames(ann)) {
-      TCGA_ann <- TCGA_ann %>% 
+      ann <- ann %>% 
         dplyr::select(-UMAP_1)
     }
     if('UMAP_2' %in% colnames(ann)) {
-      TCGA_ann <- TCGA_ann %>% 
+      ann <- ann %>% 
         dplyr::select(-UMAP_2)
     }
     if('cluster' %in% colnames(ann)) {
-      TCGA_ann <- TCGA_ann %>% 
+      ann <- ann %>% 
         dplyr::select(-cluster)
     }
   }
   
+  TCGA_ann <- dplyr::filter(ann, type=='tumor')
+  CCLE_ann <- dplyr::filter(ann, type=='CL')
   
-  hgnc.complete.set <- read_csv(file.path(data_dir, "hgnc.complete.set.csv"))
   func_genes <- dplyr::filter(hgnc.complete.set, !locus_group %in% c('non-coding RNA', 'pseudogene'))$ensembl_gene_id
   genes_used <- intersect(colnames(TCGA_mat), colnames(CCLE_mat))
   genes_used <- intersect(genes_used, func_genes)
@@ -64,14 +77,16 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.csv', cell_line_file = 'C
 }
 
 # calculate the average gene expression and variance
-# hgnc.complete.set source: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt
-calc_gene_stats <- function(dat, data_dir) {
+# hgnc.complete.set source: the version used in the paper can be found in the figshare for the paper here: https://figshare.com/articles/Celligner_data/11965269
+# the file was originally downloaded from here: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt
+calc_gene_stats <- function(dat, data_dir, hgnc_file = "hgnc_complete_set_7.24.2018.txt") {
   common_genes <- intersect(colnames(dat$TCGA_mat), colnames(dat$CCLE_mat))
   
-  hgnc.complete.set <- read_csv(file.path(data_dir, "hgnc.complete.set.csv"))
+  hgnc.complete.set <- data.table::fread(file.path(data_dir, hgnc_file)) %>% as.data.frame()
   hgnc.complete.set <- hgnc.complete.set %>% 
-    dplyr::select(Gene = ensembl_gene_id, Symbol = symbol)
-  hgnc.complete.set <- hgnc.complete.set[-which(duplicated(hgnc.complete.set$Gene)==T),]
+    dplyr::select(Gene = ensembl_gene_id, Symbol = symbol) %>%
+    filter(Gene %in% common_genes)
+  hgnc.complete.set <- hgnc.complete.set[!duplicated(hgnc.complete.set$Gene),]
   rownames(hgnc.complete.set) <- hgnc.complete.set$Gene
   hgnc.complete.set <- hgnc.complete.set[common_genes,]  
   
