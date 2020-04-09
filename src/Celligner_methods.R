@@ -43,7 +43,7 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'C
 
   if(is.null(annotation_file)) {
     ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
-                      tissue = NA,
+                      lineage = NA,
                       subtype = NA,
                       `Primary/Metastasis` = NA,
                       type = c(rep('tumor', nrow(TCGA_mat)), rep('CL', nrow(CCLE_mat))))
@@ -208,9 +208,9 @@ run_Celligner <- function(data_dir) {
   gene_stats <- calc_gene_stats(dat)
   
   comb_ann <- rbind(
-    dat$TCGA_ann %>% dplyr::select(sampleID, tissue, subtype, `Primary/Metastasis`) %>%
+    dat$TCGA_ann %>% dplyr::select(sampleID, lineage, subtype, `Primary/Metastasis`) %>%
       mutate(type = 'tumor'),
-    dat$CCLE_ann %>% dplyr::select(sampleID, tissue, subtype, `Primary/Metastasis`) %>%
+    dat$CCLE_ann %>% dplyr::select(sampleID, lineage, subtype, `Primary/Metastasis`) %>%
       mutate(type = 'CL')
   )
   
