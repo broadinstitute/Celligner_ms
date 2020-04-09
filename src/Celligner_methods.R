@@ -93,7 +93,7 @@ calc_gene_stats <- function(dat, data_dir, hgnc_file = "hgnc_complete_set_7.24.2
   gene_stats <- data.frame(
     Tumor_SD = apply(dat$TCGA_mat, 2, sd, na.rm=T),
     CCLE_SD = apply(dat$CCLE_mat, 2, sd, na.rm=T),
-    Tumor_mean = colMeans(dat$TGCA_mat, na.rm=T),
+    Tumor_mean = colMeans(dat$TCGA_mat, na.rm=T),
     CCLE_mean = colMeans(dat$CCLE_mat, na.rm=T),
     Gene = common_genes,
     stringsAsFactors = F) %>% 
@@ -205,7 +205,7 @@ calc_tumor_CL_dist <- function(seu_obj) {
 # tumor and cell line annotations
 run_Celligner <- function(data_dir) {
   dat <- load_data(data_dir)
-  gene_stats <- calc_gene_stats(dat)
+  gene_stats <- calc_gene_stats(dat, data_dir)
   
   comb_ann <- rbind(
     dat$TCGA_ann %>% dplyr::select(sampleID, lineage, subtype, `Primary/Metastasis`) %>%
