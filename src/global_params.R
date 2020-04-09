@@ -12,7 +12,8 @@ global <- list(
   mod_clust_res = 5, # resolution parameter used for clustering the data
   mnn_ndist = 3, # ndist parameter used for MNN
   n_PC_dims = 70, # number of PCs to use for dimensionality reduction
-  reduction.use = 'umap' 
+  reduction.use = 'umap', # 2D projection used for plotting
+  fast_cPCA = NULL # to run fast cPCA (approximate the cPCA eigenvectors instead of calculating all) set this to a value >= 4
 )
 
 table_theme <- gridExtra::ttheme_minimal(
