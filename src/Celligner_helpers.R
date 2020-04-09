@@ -105,7 +105,7 @@ modified_mnnCorrect <- function(ref_mat, targ_mat, k1 = 20, k2 = 20,
   sets <- batchelor::findMutualNN(ref_mat[, subset_genes], 
                                   targ_mat[, subset_genes], 
                                   k1 = k2, k2 = k1, 
-                                  BPPARAM = SerialParam())
+                                  BPPARAM = BiocParallel::SerialParam())
   mnn_pairs <- as.data.frame(sets) %>% 
     dplyr::mutate(ref_ID = rownames(ref_mat)[first],
            targ_ID = rownames(targ_mat)[second],

@@ -41,7 +41,7 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'C
   
   colnames(CCLE_mat) <- stringr::str_match(colnames(CCLE_mat), '\\((.+)\\)')[,2]
 
-  if(is.null(annotation_file)) {
+  if(is.null(annotation_file) | file.exists(file.path(data_dir, annotation_file))) {
     ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
                       lineage = NA,
                       subtype = NA,
@@ -183,7 +183,7 @@ run_cPCA <- function(TCGA_obj, CCLE_obj, pc_dims = NULL) {
 # run mutual nearest neighbors batch correction
 run_MNN <- function(CCLE_cor, TCGA_cor,  k1 = global$mnn_k_tumor, k2 = global$mnn_k_CL, ndist = global$mnn_ndist, 
                     subset_genes = DE_gene_set) {
-  mnn_res <- modified_mnnCorrect(CCLE_cor, TCGA_cor, k1 = mnn_k_tumor, k2 = mnn_k_CL, ndist = mnn_ndist, 
+  mnn_res <- modified_mnnCorrect(CCLE_cor, TCGA_cor, k1 = k1, k2 = k2, ndist = ndist, 
                              subset_genes = DE_gene_set)
   
   return(mnn_res)
@@ -228,7 +228,7 @@ run_Celligner <- function(data_dir) {
       tumor_rank = dplyr::dense_rank(-gene_stat_tumor),
       CL_rank = dplyr::dense_rank(-gene_stat_CL),
       best_rank = pmin(tumor_rank, CL_rank, na.rm=T)) %>%
-    dplyr::left_join(dat$gene_stats, by = 'Gene')
+    dplyr::left_join(gene_stats, by = 'Gene')
   
   # take genes that are ranked in the top 1000 from either dataset, used for finding mutual nearest neighbors
   DE_gene_set <- DE_genes %>%
@@ -251,7 +251,7 @@ run_Celligner <- function(data_dir) {
   mnn_res <- run_MNN(CCLE_cor, TCGA_cor,  k1 = global$mnn_k_tumor, k2 = global$mnn_k_CL, ndist = global$mnn_ndist, 
                       subset_genes = DE_gene_set)
   
-  combined_mat <- t(rbind(mnn_res$corrected, CCLE_cor))
+  combined_mat <- rbind(mnn_res$corrected, CCLE_cor)
   
   comb_obj <- create_Seurat_object(combined_mat, comb_ann)
   comb_obj <- cluster_data(comb_obj)
