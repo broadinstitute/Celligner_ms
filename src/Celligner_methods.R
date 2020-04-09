@@ -73,7 +73,7 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'C
   TCGA_mat <- TCGA_mat[,genes_used]
   CCLE_mat <- CCLE_mat[,genes_used]
   
-  return(list(TCGA_mat, TCGA_ann, CCLE_mat, CCLE_ann))
+  return(list(TCGA_mat = TCGA_mat, TCGA_ann = TCGA_ann, CCLE_mat = CCLE_mat, CCLE_ann = CCLE_ann))
 }
 
 # calculate the average gene expression and variance
