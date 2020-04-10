@@ -41,7 +41,7 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'C
   
   colnames(CCLE_mat) <- stringr::str_match(colnames(CCLE_mat), '\\((.+)\\)')[,2]
 
-  if(is.null(annotation_file) | file.exists(file.path(data_dir, annotation_file))) {
+  if(is.null(annotation_file) | !file.exists(file.path(data_dir, annotation_file))) {
     ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
                       lineage = NA,
                       subtype = NA,
