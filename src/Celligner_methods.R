@@ -184,7 +184,7 @@ run_cPCA <- function(TCGA_obj, CCLE_obj, pc_dims = NULL) {
 run_MNN <- function(CCLE_cor, TCGA_cor,  k1 = global$mnn_k_tumor, k2 = global$mnn_k_CL, ndist = global$mnn_ndist, 
                     subset_genes = DE_gene_set) {
   mnn_res <- modified_mnnCorrect(CCLE_cor, TCGA_cor, k1 = k1, k2 = k2, ndist = ndist, 
-                             subset_genes = DE_gene_set)
+                             subset_genes = subset_genes)
   
   return(mnn_res)
 }
@@ -209,9 +209,9 @@ run_Celligner <- function(data_dir) {
   
   comb_ann <- rbind(
     dat$TCGA_ann %>% dplyr::select(sampleID, lineage, subtype, `Primary/Metastasis`) %>%
-      mutate(type = 'tumor'),
+      dplyr::mutate(type = 'tumor'),
     dat$CCLE_ann %>% dplyr::select(sampleID, lineage, subtype, `Primary/Metastasis`) %>%
-      mutate(type = 'CL')
+      dplyr::mutate(type = 'CL')
   )
   
   TCGA_obj <- create_Seurat_object(dat$TCGA_mat, dat$TCGA_ann, type='tumor')
