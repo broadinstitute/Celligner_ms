@@ -31,7 +31,7 @@ global_params.R: Define global params shared across analysis scripts. Includes p
 
 ## Running Celligner
 
-### R packages to intall:
+### R packages to install:
 
 - here
 - tidyverse
@@ -43,15 +43,15 @@ global_params.R: Define global params shared across analysis scripts. Includes p
 - batchelor
 - FNN
 
-Most of the packages are CRAN packages (can be install with install.packages('name_of_package')), limma (https://bioconductor.org/packages/release/bioc/html/limma.html) and batchelor (https://bioconductor.org/packages/release/bioc/html/batchelor.html) are bioconductor packages. 
+Most of the packages are CRAN packages (can be installed with install.packages('name_of_package')), limma (https://bioconductor.org/packages/release/bioc/html/limma.html) and batchelor (https://bioconductor.org/packages/release/bioc/html/batchelor.html) are bioconductor packages. 
 
 ### Download the necessary data:
 
 Data files should be stored in the directory passed to run_Celligner(). There are 4 files needed to run Celligner, by default the files are named:
-TCGA_mat.tsv
-CCLE_mat.csv
-Celligner_info.csv
-hgnc_complete_set_7.24.2018.txt
+- TCGA_mat.tsv
+- CCLE_mat.csv
+- Celligner_info.csv
+- hgnc_complete_set_7.24.2018.txt
 
 TCGA_mat.tsv is the matrix of log2(TPM+1) expression values for the tumor samples. The file used in the paper can be download from XenaBrowser: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443 (this file should be renamed TCGA_mat.tsv to use the default naming).
 
@@ -59,7 +59,7 @@ CCLE_mat.csv is the matrix of log2(TPM+1) expression values for the cell line sa
 
 Celligner_info.csv is a matrix of sample info, which can be downloaded from the Figshare repo here: https://figshare.com/articles/Celligner_data/11965269. This file contains the sample names for the tumors and cell lines, as well as the information such as the cancer lineage, subtype, primary vs metastatic status, and tumor purity of the samples. These features are used for plotting the data, but not for the Celligner method itself. If this file is not provided than a default matrix will be created using the row names of TCGA_mat and CCLE_mat as the sampleIDs.
 
-hgnc_complete_set_7.24.2018.txt is a table of gene ids, and is used to convert between HGNC gene IDs and Ensembl IDs. The version of this matrix used in the paper can be downloaded from the Figshare repo here: https://figshare.com/articles/Celligner_data/11965269. This file was downloaded from HGNC, and the latest version of the file can be downloader from here: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt (using this version will change the genes used). 
+hgnc_complete_set_7.24.2018.txt is a table of gene ids, and is used to convert between HGNC gene IDs and Ensembl IDs. The version of this matrix used in the paper can be downloaded from the Figshare repo here: https://figshare.com/articles/Celligner_data/11965269. This file was downloaded from HGNC, and the latest version of the file can be downloaded from here: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt (using this version will change the genes used). 
 
 ### Running the method:
 
