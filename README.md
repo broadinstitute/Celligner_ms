@@ -28,3 +28,54 @@ global_params.R: Define global params shared across analysis scripts. Includes p
 
 - Celligner_methods.R : Functions to run the various stages and entire Celligner alignment method
 - There are separate scripts for each of the main and supplementary figure panels within the manuscript.
+
+## Running Celligner
+
+### R packages to install:
+
+- here
+- tidyverse
+- Seurat
+- pdist
+- data.table
+- limma
+- irlba
+- batchelor
+- FNN
+
+Most of the packages are CRAN packages (can be installed with install.packages('name_of_package')), limma (https://bioconductor.org/packages/release/bioc/html/limma.html) and batchelor (https://bioconductor.org/packages/release/bioc/html/batchelor.html) are bioconductor packages. 
+
+### Download the necessary data:
+
+Data files should be stored in the directory passed to run_Celligner(). There are 4 files needed to run Celligner, by default the files are named:
+- TCGA_mat.tsv
+- CCLE_mat.csv
+- Celligner_info.csv
+- hgnc_complete_set_7.24.2018.txt
+
+TCGA_mat.tsv is the matrix of log2(TPM+1) expression values for the tumor samples. The file used in the paper can be download from XenaBrowser: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443 (this file should be renamed TCGA_mat.tsv to use the default naming).
+
+CCLE_mat.csv is the matrix of log2(TPM+1) expression values for the cell line samples. The file used in the paper is the DepMap Public 19Q4 'CCLE_expression_full.csv' file, which can be dowloaded from depmap.org: https://depmap.org/portal/download (this file should be renamed CCLE_mat.csv to use the default naming).
+
+Celligner_info.csv is a matrix of sample info, which can be downloaded from the Figshare repo here: https://figshare.com/articles/Celligner_data/11965269. This file contains the sample names for the tumors and cell lines, as well as the information such as the cancer lineage, subtype, primary vs metastatic status, and tumor purity of the samples. These features are used for plotting the data, but not for the Celligner method itself. If this file is not provided than a default matrix will be created using the row names of TCGA_mat and CCLE_mat as the sampleIDs.
+
+hgnc_complete_set_7.24.2018.txt is a table of gene ids, and is used to convert between HGNC gene IDs and Ensembl IDs. The version of this matrix used in the paper can be downloaded from the Figshare repo here: https://figshare.com/articles/Celligner_data/11965269. This file was downloaded from HGNC, and the latest version of the file can be downloaded from here: ftp://ftp.ebi.ac.uk/pub/databases/genenames/new/tsv/hgnc_complete_set.txt (using this version will change the genes used). 
+
+### Running the method:
+
+The run_Celligner() method (found in Celligner_methods.R) combines all steps of the Celligner method. It loads the data, finds differentially expressed genes, runs contrastive principal components analysis, runs mutual nearest neighbors batch correction, and creates a Seurat object containing the aligned data and a 2D UMAP projection of the aligned data. 
+
+### Using the output:
+
+run_Celligner() outputs a Seurat object (named comb_obj), which is used to package the data and run dimensionality reduction methods. To learn more about Seurat, see here: https://satijalab.org/seurat/. To access various information in the Seurat object use these commands
+- To get the celligner aligned output: Seurat::GetAssayData(comb_obj)
+- To get the metadata: comb_obj@meta.data
+- To get the coordinates for the 2D UMAP projection: Seurat::Embeddings(comb_obj, reduction ='umap')
+- To use Seurat to plot the results (colored by cancer lineage): Seurat::DimPlot(comb_obj, reduction = 'umap',  group.by = 'lineage', pt.size = 0.5) + ggplot2::theme(legend.position = 'none')
+
+
+### Tips:
+
+- By default the global parameter fast_cPCA is set to NULL. This means that all the contrastive principal components (cPCs) will be calculated, which is quite slow. To reduce the time for this step set fast_cPCA to a value >= 4, so that it estimates a calculation of only the top contrastive principal components, which are used by the method (which by default just uses the top 4 cPCs). This step in the method is still the slowest part of the Celligner method.
+- If using your own data (not the data recommended above) you will need to write your own load_data method. Later methods assume that the matrix TCGA_mat is sample x gene matrix, where the rows are the tumor sample IDs and the columns are Ensembl gene IDs, the matrix CCLE_mat is sample x gene matrix, where the rows are the cell line sample IDs and the columns are Ensembl gene IDs, and that the TCGA_ann and CCLE_ann matrices output by load_data have the columns sampleID, lineage, subtype, and `Primary/Metastasis` (these columns aren't used for the method, just for plotting the results - sampleID needs to match the row names of TCGA_mat and CCLE_mat, but the other columns can be set to NA without affecting the results). 
+
