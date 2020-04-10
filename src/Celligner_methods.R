@@ -45,8 +45,8 @@ load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'C
     ann <- data.frame(sampleID = c(rownames(TCGA_mat), rownames(CCLE_mat)),
                       lineage = NA,
                       subtype = NA,
-                      `Primary/Metastasis` = NA,
                       type = c(rep('tumor', nrow(TCGA_mat)), rep('CL', nrow(CCLE_mat))))
+    ann$`Primary/Metastasis` <- NA
   } else {
     ann <- data.table::fread(file.path(data_dir, annotation_file)) %>% as.data.frame()
     if('UMAP_1' %in% colnames(ann)) {
@@ -182,7 +182,7 @@ run_cPCA <- function(TCGA_obj, CCLE_obj, pc_dims = NULL) {
 
 # run mutual nearest neighbors batch correction
 run_MNN <- function(CCLE_cor, TCGA_cor,  k1 = global$mnn_k_tumor, k2 = global$mnn_k_CL, ndist = global$mnn_ndist, 
-                    subset_genes = DE_gene_set) {
+                    subset_genes) {
   mnn_res <- modified_mnnCorrect(CCLE_cor, TCGA_cor, k1 = k1, k2 = k2, ndist = ndist, 
                              subset_genes = subset_genes)
   
