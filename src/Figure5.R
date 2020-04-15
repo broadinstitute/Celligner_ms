@@ -68,11 +68,11 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
   cur_cell_lines <- dplyr::filter(alignment, type=='CL' & lineage == 'skin')$sampleID
 
   mel_cluster <- dplyr::filter(alignment, lineage=='skin')$cluster %>% 
-    table()
+    table() %>%
     as.data.frame() %>%
     dplyr::arrange(dplyr::desc(Freq)) %>%
     head(2) %>% 
-    .[['Var1']] %>%
+    .[['.']] %>%
     as.character()
   
   sox10_dep_exp <- cbind.data.frame(CCLE_mat[int_cell_lines,  "ENSG00000100146"], 

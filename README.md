@@ -31,19 +31,15 @@ global_params.R: Define global params shared across analysis scripts. Includes p
 
 ## Running Celligner
 
-### R packages to install:
+This method was run on macOS High Sierra v10.13.6 using RStudio version 1.2.5033 and R version 3.6.2 (2019-12-12).
 
-- here
-- tidyverse
-- Seurat
-- pdist
-- data.table
-- limma
-- irlba
-- batchelor
-- FNN
+### Download/clone the repo
 
-Most of the packages are CRAN packages (can be installed with install.packages('name_of_package')), limma (https://bioconductor.org/packages/release/bioc/html/limma.html) and batchelor (https://bioconductor.org/packages/release/bioc/html/batchelor.html) are bioconductor packages. 
+Download or clone this repo and open as a new project in RStudio.
+
+### Install dependencies:
+
+Use the install_packages.R script to install the necessary R packages to run the methods.
 
 ### Download the necessary data:
 
@@ -65,6 +61,9 @@ hgnc_complete_set_7.24.2018.txt is a table of gene ids, and is used to convert b
 
 The run_Celligner() method (found in Celligner_methods.R) combines all steps of the Celligner method. It loads the data, finds differentially expressed genes, runs contrastive principal components analysis, runs mutual nearest neighbors batch correction, and creates a Seurat object containing the aligned data and a 2D UMAP projection of the aligned data. 
 
+Running the run_Celligner() method, with default parameters takes <1 hr, while running with the exact parameters used in the manuscript (setting the global parameter fastPCA to NULL) can take ~10 hours.
+
+
 ### Using the output:
 
 run_Celligner() outputs a Seurat object (named comb_obj), which is used to package the data and run dimensionality reduction methods. To learn more about Seurat, see here: https://satijalab.org/seurat/. To access various information in the Seurat object use these commands
@@ -74,8 +73,8 @@ run_Celligner() outputs a Seurat object (named comb_obj), which is used to packa
 - To use Seurat to plot the results (colored by cancer lineage): Seurat::DimPlot(comb_obj, reduction = 'umap',  group.by = 'lineage', pt.size = 0.5) + ggplot2::theme(legend.position = 'none')
 
 
-### Tips:
+### Notes:
 
-- By default the global parameter fast_cPCA is set to NULL. This means that all the contrastive principal components (cPCs) will be calculated, which is quite slow. To reduce the time for this step set fast_cPCA to a value >= 4, so that it estimates a calculation of only the top contrastive principal components, which are used by the method (which by default just uses the top 4 cPCs). This step in the method is still the slowest part of the Celligner method.
+- By default the global parameter fast_cPCA is set to 10, which reduces the time of calculated the contrastive principal components (cPCs) by estimating a calculation of only the top contrastive principal components needed for the method (by the default the methods only uses the top four cPCs, so this value can be set to any number >=4). To recreate the exact output from the paper set the global parameter fast_cPCA to NULL so that all the contrastive principal components (cPCs) will be calculated. This is quite slow.
 - If using your own data (not the data recommended above) you will need to write your own load_data method. Later methods assume that the matrix TCGA_mat is sample x gene matrix, where the rows are the tumor sample IDs and the columns are Ensembl gene IDs, the matrix CCLE_mat is sample x gene matrix, where the rows are the cell line sample IDs and the columns are Ensembl gene IDs, and that the TCGA_ann and CCLE_ann matrices output by load_data have the columns sampleID, lineage, subtype, and `Primary/Metastasis` (these columns aren't used for the method, just for plotting the results - sampleID needs to match the row names of TCGA_mat and CCLE_mat, but the other columns can be set to NA without affecting the results). 
 

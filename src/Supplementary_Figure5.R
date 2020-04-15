@@ -76,7 +76,7 @@ Celligner_alignment_testis <- function(alignment) {
   return(alignment_testis)
 }
 
-# Supplementary Figure 5s
+# Supplementary Figure 5d
 Celligner_alignment_testis_highlight <- function(alignment) {
   alignment$name <- gsub("_.*", "", alignment$sampleID_CCLE_Name)
   

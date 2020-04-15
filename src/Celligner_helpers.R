@@ -122,7 +122,7 @@ modified_mnnCorrect <- function(ref_mat, targ_mat, k1 = 20, k2 = 20,
   
   # Recompute correction vectors and apply them.
   re.ave.out <- .average_correction(ref_mat, sets$first, targ_mat, sets$second)
-  targ_mat <- .tricube_weighted_correction(targ_mat, re.ave.out$averaged, re.ave.out$second, k=k2, ndist=ndist, subset_genes, BPPARAM=SerialParam())
+  targ_mat <- .tricube_weighted_correction(targ_mat, re.ave.out$averaged, re.ave.out$second, k=k2, ndist=ndist, subset_genes, BPPARAM=BiocParallel::SerialParam())
   
   final <- list(corrected = targ_mat, 
                 pairs = mnn_pairs)
@@ -157,7 +157,7 @@ modified_mnnCorrect <- function(ref_mat, targ_mat, k1 = 20, k2 = 20,
 
 #' @importFrom BiocNeighbors queryKNN
 #' @importFrom BiocParallel SerialParam
-.tricube_weighted_correction <- function(curdata, correction, in.mnn, k=20, ndist=3, subset_genes, BNPARAM=NULL, BPPARAM=SerialParam())
+.tricube_weighted_correction <- function(curdata, correction, in.mnn, k=20, ndist=3, subset_genes, BNPARAM=NULL, BPPARAM=BiocParallel::SerialParam())
   # Computing tricube-weighted correction vectors for individual cells,
   # using the nearest neighbouring cells _involved in MNN pairs_.
   # Modified to use FNN rather than queryKNN for nearest neighbor finding
