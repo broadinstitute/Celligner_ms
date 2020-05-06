@@ -53,7 +53,7 @@ plot_uncorrected_data <- function(CCLE_mat, TCGA_mat) {
 }
 
 # figure 1c and Supplementary figure 2a
-# cPCA values included in Supplementary data files
+# cPCA_values included in the figshare: https://figshare.com/articles/Celligner_data/11965269
 make_cPC_eigenspectrum <- function(cPCA_values) {
   cPCA_eigenvalues_plot <- data.frame(eval =cPCA_values$cPCA_values,
                                       rank = seq(length(cPCA_values$cPCA_values))) %>%
@@ -73,6 +73,9 @@ make_cPC_eigenspectrum <- function(cPCA_values) {
 
 
 # used as input for 1d and 1e
+# input files: 
+# TCGA_mat source: https://xenabrowser.net/datapages/?dataset=TumorCompendium_v10_PolyA_hugo_log2tpm_58581genes_2019-07-25.tsv&host=https%3A%2F%2Fxena.treehouse.gi.ucsc.edu%3A443
+# CCLE_mat source: depmap.org DepMap Public 19Q4 CCLE_expression_full.csv
 get_current_eigenvector <- function(TCGA_mat, CCLE_mat, alignment, cPCA_vectors, cur_eig_vec = 1) {
   tcga_ccle <- rbind(TCGA_mat, CCLE_mat)
   cur_eig <- cPCA_vectors[,cur_eig_vec] %>% set_names(rownames(cPCA_vectors))

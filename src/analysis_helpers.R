@@ -64,7 +64,7 @@ run_fGSEA <- function (gsc, X = NULL, y = NULL, perm_type = "label", nperm = 100
     used_samples <- which(!is.na(y))
     used_genes <- which(apply(X[used_samples, ], 2, var, 
                               na.rm = T) > 0)
-    fgseaRes <- fgsea::fgseaL(pathways = GSEABase:::geneIds(gsc), mat = t(X[used_samples, 
+    fgseaRes <- fgsea::fgsea(pathways = GSEABase:::geneIds(gsc), mat = t(X[used_samples, 
                                                                  used_genes]), labels = y[used_samples], minSize = min_set_size, 
                               maxSize = max_set_size, nperm = nperm, gseaParam = gseaParam, 
                               nproc = nproc)
