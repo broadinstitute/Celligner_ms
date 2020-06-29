@@ -37,13 +37,20 @@ plot_uncorrected_data <- function(CCLE_mat, TCGA_mat) {
                                              metric = global$distance_metric,
                                              verbose=F)
   
-  uncorrected_combined_type_plot <- ggplot2::ggplot(uncorrected_alignment, ggplot2::aes(UMAP_1, UMAP_2, fill=type)) +
-    ggplot2::geom_point(alpha=0.7, size=0.5, pch=21, color='white', stroke=0.1) +
+  uncorrected_alignment <- Seurat::Embeddings(original_combined_obj, reduction = 'umap') %>%
+    as.data.frame() %>%
+    set_colnames(c('UMAP_1', 'UMAP_2')) %>%
+    rownames_to_column(var = 'sampleID') %>%
+    left_join(comb_ann, by = 'sampleID')
+  
+  uncorrected_combined_type_plot <- ggplot2::ggplot(uncorrected_alignment, ggplot2::aes(UMAP_1, UMAP_2, color=type, shape = type)) +
+    ggplot2::geom_point(alpha=0.7, size=0.5) +
     ggplot2::theme_classic() +
+    scale_shape_manual(values = c(CL=3, tumor=16)) +
     ggplot2::theme(legend.position='bottom',
           text = ggplot2::element_text(size=6),
-          axis.text = ggplot2::element_text(size=4),
-          axis.title = ggplot2::element_text(size=4),
+          axis.text = ggplot2::element_text(size=8),
+          axis.title = ggplot2::element_text(size=8),
           legend.margin =ggplot2::margin(0,0,0,0), 
           legend.box.margin=ggplot2::margin(-10,-30,-10,-30),
           axis.line = ggplot2::element_line(size = .3))

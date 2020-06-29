@@ -2,7 +2,7 @@ options(repos = c("https://cran.cnr.berkeley.edu"))
 
 cran_packages <- c('here', 'tidyverse', 'reshape2', 'plyr', 'data.table', 'Seurat',
                    'pheatmap', 'pdist', 'gridExtra', 'ggpubr', 'grDevices', 'RColorBrewer',
-                   'FNN', 'ggrepel', 'ggridges', 'irlba')
+                   'FNN', 'ggrepel', 'ggridges', 'irlba', 'viridis')
 new_cran_packages <- cran_packages[!(cran_packages %in% installed.packages()[,"Package"])]
 if(length(new_cran_packages)) install.packages(new_cran_packages)
 

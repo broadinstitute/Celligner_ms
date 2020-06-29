@@ -19,7 +19,7 @@ get_cell_line_tumor_class <- function(tumor_CL_dist, alignment) {
 cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
   cl_tissue_type <- dplyr::filter(alignment, type=='CL')
  #cl_tissue_type[grep('rhabdomyosarcoma', cl_tissue_type$subtype),'tissue'] <- 'rhabdomyosarcoma'
-  rownames(cl_tissue_type) <- cl_tissue_type$sampleID_CCLE_Name
+  rownames(cl_tissue_type) <- cl_tissue_type$sampleID
   classification_freq <- table(cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_dist),'lineage']) %>% as.data.frame()
   classification_freq <- reshape2::dcast(classification_freq, cl_tumor_classes ~ Var2, value.var = 'Freq') %>%
     tibble::column_to_rownames('cl_tumor_classes')
@@ -27,8 +27,8 @@ cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
                           unique(dplyr::filter(alignment, type=='tumor')$lineage)), 
                 rownames(classification_freq)))
   
-  thyroid_tumor <- rep(0, ncol(classification_freq))
-  classification_freq <- rbind(classification_freq,`thyroid`= thyroid_tumor) 
+  esophagus_tumor <- rep(0, ncol(classification_freq))
+  classification_freq <- rbind(classification_freq,`esophagus`= esophagus_tumor) 
   common_types <- intersect(rownames(classification_freq), colnames(classification_freq))
   
   prop_agree <- sum(diag(as.matrix(classification_freq[common_types, common_types])))/sum(as.matrix(classification_freq[common_types, common_types]))
@@ -96,8 +96,8 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
   dist_list <- numeric()
   tissue_types <- character()
   for(cancer in common_cancer_types) {
-    cur_tumors <- dplyr::filter(alignment, type=='tumor' & compare_types==cancer)$sampleID_CCLE_Name
-    cur_CLs <- dplyr::filter(alignment, type=='CL' & compare_types==cancer)$sampleID_CCLE_Name
+    cur_tumors <- dplyr::filter(alignment, type=='tumor' & compare_types==cancer)$sampleID
+    cur_CLs <- dplyr::filter(alignment, type=='CL' & compare_types==cancer)$sampleID
     cur_dist <- reshape2::melt(as.matrix(tumor_CL_dist[cur_tumors, cur_CLs]))
     tumor_names <- c(tumor_names, as.character(cur_dist$Var1))
     CL_names <- c(CL_names, as.character(cur_dist$Var2))

@@ -10,9 +10,9 @@ source(here::here('src', 'global_params.R'))
 
 # Used to create input for Supplementary Figure 4a
 calc_uncorrected_tumor_CL_distance <- function(TCGA_mat, CCLE_mat, alignment) {
-  uncorrected_comb_obj <- create_Seurat_object(rbind(TCGA_mat, CCLE_mat),
-                                               alignment)
-  uncorrected_tumor_CL_dist <- calc_tumor_CL_dist(uncorrected_comb_obj)
+
+  uncorrected_tumor_CL_dist <- as.matrix(pdist::pdist(X=TCGA_mat, 
+                                                      Y=CCLE_mat))
   
   rownames(uncorrected_tumor_CL_dist) <- rownames(TCGA_mat)
   colnames(uncorrected_tumor_CL_dist) <- rownames(CCLE_mat)
@@ -40,11 +40,9 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
   
   thyroid_tumor <- rep(0, ncol(classification_freq))
   classification_freq <- rbind(classification_freq,thyroid= thyroid_tumor) 
-  eye_tumor <- rep(0, ncol(classification_freq))
-  classification_freq <- rbind(classification_freq,eye= eye_tumor) 
-  pancreas_tumor <- rep(0, ncol(classification_freq))
-  classification_freq <- rbind(classification_freq,pancreas= pancreas_tumor) 
-  
+  gastric_tumor <- rep(0, ncol(classification_freq))
+  classification_freq <- rbind(classification_freq,gastric= gastric_tumor) 
+
   common_types <- intersect(rownames(classification_freq), colnames(classification_freq))
 
   uncorrected_prop_agree <- sum(diag(as.matrix(classification_freq[common_types, common_types])))/sum(as.matrix(classification_freq[common_types, common_types]))
@@ -64,10 +62,10 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
   agreement_tumor <- base::sort(agreement_tumor, decreasing=T)
   
   
-  sample_order <- c('soft_tissue', 'peripheral_nervous_system', 'lymphocyte', 'skin', 'kidney', 'blood',
-                    'breast','colorectal', 'bone', 'urinary_tract', 'prostate', 'lung', 'uterus','gastric', 'eye',
-                    'upper_aerodigestive', 'ovary', 'liver', 'cervix', 'pancreas', 'central_nervous_system',  'esophagus',
-                    'bile_duct', 'thyroid')
+  sample_order <- c('kidney', 'soft_tissue', 'lymphocyte','peripheral_nervous_system', 'skin', 'colorectal', 'blood',
+                    'lung','breast', 'bone', 'prostate', 'urinary_tract', 'upper_aerodigestive', 'uterus', 'eye','gastric',
+                      'liver','ovary','pancreas', 'cervix',  'central_nervous_system',
+                    'bile_duct', 'thyroid', 'esophagus')
   
   
   
@@ -88,7 +86,7 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
            height = 3, 
            fontface = heatmap_params$font_face, 
            angle_col=90, 
-           filename = filename,
+           #filename = filename,
            color=heatmap_params$color_vector)
 }
 
