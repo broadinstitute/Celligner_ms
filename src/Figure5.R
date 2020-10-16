@@ -4,6 +4,8 @@ library(tidyverse)
 source(here::here('src', 'analysis_helpers.R'))
 source(here::here('src', 'global_params.R'))
 
+# use the Celligner_info file for the alignment matrix used within these methods
+
 # figure 5a
 plot_undifferentiated_cluster <- function(alignment, cluster_selected = c(12,28)) {
   type_in_cluster <- rep('tumor_out', nrow(alignment))
@@ -95,12 +97,13 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
     ggplot2::xlab("SOX10 expression") +
     ggplot2::ylab("SOX10 dependency") +
     ggplot2::theme(legend.position = 'bottom',
-          text=ggplot2::element_text(size=6),
+          text=ggplot2::element_text(size=7),
           legend.margin=ggplot2::margin(0,0,0,0),
           legend.box.margin=ggplot2::margin(-10,-10,-10,-10),
           legend.justification = "left",
-          legend.spacing.y = ggplot2::unit(.0001, 'cm')) +
-    ggplot2::guides(color = ggplot2::guide_legend(nrow=2, byrow=TRUE))
+          legend.spacing.y = ggplot2::unit(.0001, 'cm'),
+          plot.margin = ggplot2::unit(c(0.2,1,0.2,0.2), "cm")) +
+    ggplot2::guides(color = ggplot2::guide_legend(nrow=2, byrow=TRUE, title="skin \nclusters"))
 
   return(sox10_dep_exp_plot)
 }
@@ -125,7 +128,7 @@ dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4
                         ggplot2::aes(color=`clusters`), alpha=0.7) +
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = 'bottom',
-          text=ggplot2::element_text(size=6),
+          text=ggplot2::element_text(size=7),
           legend.margin=ggplot2::margin(0,0,0,0), 
           legend.box.margin=ggplot2::margin(-10,-10,-10,-10),
           legend.justification = "left", legend.spacing.y = ggplot2::unit(.0001, 'cm')) +

@@ -6,21 +6,21 @@ source(here::here('src', 'global_params.R'))
 
 
 # used as input for 3a
-# tumor_CL_dist included as Supplementary data
-get_cell_line_tumor_class <- function(tumor_CL_dist, alignment) {
-  cl_tumor_classes <- apply(tumor_CL_dist, 2, function(x) cell_line_tumor_class(x, tumor_CL_dist, alignment)) %>% 
+# tumor_CL_cor included in the figshare
+get_cell_line_tumor_class <- function(tumor_CL_cor, alignment) {
+  cl_tumor_classes <- apply(tumor_CL_cor, 2, function(x) cell_line_tumor_class(x, tumor_CL_cor, alignment)) %>% 
     as.character()
-  names(cl_tumor_classes) <- colnames(tumor_CL_dist)
+  names(cl_tumor_classes) <- colnames(tumor_CL_cor)
   
   return(cl_tumor_classes)
 }
 
 # figure 3a
-cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
+cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, tumor_CL_cor, filename) {
   cl_tissue_type <- dplyr::filter(alignment, type=='CL')
  #cl_tissue_type[grep('rhabdomyosarcoma', cl_tissue_type$subtype),'tissue'] <- 'rhabdomyosarcoma'
   rownames(cl_tissue_type) <- cl_tissue_type$sampleID
-  classification_freq <- table(cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_dist),'lineage']) %>% as.data.frame()
+  classification_freq <- table(cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_cor),'lineage']) %>% as.data.frame()
   classification_freq <- reshape2::dcast(classification_freq, cl_tumor_classes ~ Var2, value.var = 'Freq') %>%
     tibble::column_to_rownames('cl_tumor_classes')
   print(setdiff(intersect(unique(dplyr::filter(alignment, type=='CL')$lineage),
@@ -75,7 +75,7 @@ cell_line_tumor_class_plot <- function(cl_tumor_classes, alignment, filename) {
 
 # figure 3b
 # input files included in Supplementary data
-cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
+cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_cor) {
   alignment$compare_types <- alignment$lineage
   alignment[which(alignment$subtype=='Ewing sarcoma'),'compare_types'] <- 'Ewing sarcoma'
   alignment[which(alignment$subtype=='osteosarcoma'),'compare_types'] <- 'osteosarcoma'
@@ -98,7 +98,7 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
   for(cancer in common_cancer_types) {
     cur_tumors <- dplyr::filter(alignment, type=='tumor' & compare_types==cancer)$sampleID
     cur_CLs <- dplyr::filter(alignment, type=='CL' & compare_types==cancer)$sampleID
-    cur_dist <- reshape2::melt(as.matrix(tumor_CL_dist[cur_tumors, cur_CLs]))
+    cur_dist <- reshape2::melt(as.matrix(tumor_CL_cor[cur_tumors, cur_CLs]))
     tumor_names <- c(tumor_names, as.character(cur_dist$Var1))
     CL_names <- c(CL_names, as.character(cur_dist$Var2))
     dist_list <- c(dist_list, cur_dist$value)
@@ -109,7 +109,7 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
   dist_df <- cbind.data.frame(tumor_names, CL_names, dist_list, tissue_types)
   dist_df$tissue_types <- gsub("_", " ", dist_df$tissue_types)
   mean_dist <- aggregate(dist_df$dist_list, list(dist_df$tissue_types), 
-                         FUN = quantile, probs = 0.25) %>% dplyr::arrange(x)
+                         FUN = quantile, probs = 0.25) %>% dplyr::arrange(desc(x))
   
   mean_dist$Group.1 <- rev(mean_dist$Group.1)
   dist_df$tissue_types <- factor(dist_df$tissue_types, levels = mean_dist$Group.1)
@@ -121,7 +121,7 @@ cell_line_tumor_distance_distribution <- function(alignment, tumor_CL_dist) {
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = "none", text=ggplot2::element_text(size=6),
           axis.text = ggplot2::element_text(size=6)) +
-    ggplot2::xlab("distance between cell lines and tumors") +
+    ggplot2::xlab("correlation between cell lines and tumors") +
     ggplot2::ylab('cancer type')
   
   return(tumor_dist_spread)

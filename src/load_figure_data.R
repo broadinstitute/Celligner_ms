@@ -74,13 +74,19 @@ load_cPCA_values <- function(data_dir, cPCA_values = 'cPCA_values.csv') {
 }
 
 load_cPCA_vectors <- function(data_dir, cPCs = 'cPCs.csv') {
-  cPCA_vectors <- read_csv(file.path(data_dir, cPCs)) %>%
+  cPCA_vectors <- readr::read_csv(file.path(data_dir, cPCs)) %>%
     as.data.frame() %>%
     tibble::column_to_rownames('X1')
   
   return(cPCA_vectors)
 }
   
+load_tumor_CL_cor <- function(data_dir, cor_file = 'tumor_CL_cor.csv') {
+  tumor_CL_cor <- readr::read_csv(file.path(data_dir, cor_file)) %>%
+    tibble::column_to_rownames('X1')
+  
+  return(tumor_CL_cor)
+}
 
 load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'CCLE_mat.csv', 
                       annotation_file = 'Celligner_info.csv', hgnc_file = "hgnc_complete_set_7.24.2018.txt") {

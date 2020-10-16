@@ -9,29 +9,25 @@ source(here::here('src', 'global_params.R'))
 
 
 # Used to create input for Supplementary Figure 4a
-calc_uncorrected_tumor_CL_distance <- function(TCGA_mat, CCLE_mat, alignment) {
+calc_uncorrected_tumor_CL_correlation <- function(TCGA_mat, CCLE_mat) {
 
-  uncorrected_tumor_CL_dist <- as.matrix(pdist::pdist(X=TCGA_mat, 
-                                                      Y=CCLE_mat))
+  uncorrected_tumor_CL_cor <- cor(t(TCGA_mat), t(CCLE_mat), use='pairwise')
   
-  rownames(uncorrected_tumor_CL_dist) <- rownames(TCGA_mat)
-  colnames(uncorrected_tumor_CL_dist) <- rownames(CCLE_mat)
-  
-  return(uncorrected_tumor_CL_dist)
+  return(uncorrected_tumor_CL_cor)
 }
 
 # Supplementary Figure 4a
-plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment, filename) {
-  uncorrected_cl_tumor_classes <- apply(uncorrected_tumor_CL_dist, 2, 
+plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_cor, alignment, filename) {
+  uncorrected_cl_tumor_classes <- apply(uncorrected_tumor_CL_cor, 2, 
                                         function(x) 
-                                          cell_line_tumor_class(x, uncorrected_tumor_CL_dist, alignment)) %>%
+                                          cell_line_tumor_class(x, uncorrected_tumor_CL_cor, alignment)) %>%
     as.character()
-  names(uncorrected_cl_tumor_classes) <- colnames(uncorrected_tumor_CL_dist)
+  names(uncorrected_cl_tumor_classes) <- colnames(uncorrected_tumor_CL_cor)
 
   cl_tissue_type <- dplyr::filter(alignment, type=='CL')
   #cl_tissue_type[grep('rhabdomyosarcoma', cl_tissue_type$subtype),'tissue'] <- 'rhabdomyosarcoma'
   rownames(cl_tissue_type) <- cl_tissue_type$sampleID
-  classification_freq <- table(uncorrected_cl_tumor_classes, cl_tissue_type[colnames(tumor_CL_dist),'lineage']) %>% as.data.frame()
+  classification_freq <- table(uncorrected_cl_tumor_classes, cl_tissue_type[colnames(uncorrected_tumor_CL_cor),'lineage']) %>% as.data.frame()
   classification_freq <- reshape2::dcast(classification_freq, uncorrected_cl_tumor_classes ~ Var2, value.var = 'Freq') %>% tibble::column_to_rownames('uncorrected_cl_tumor_classes')
   
   print(setdiff(intersect(unique(dplyr::filter(alignment, type=='CL')$lineage),
@@ -42,7 +38,11 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
   classification_freq <- rbind(classification_freq,thyroid= thyroid_tumor) 
   gastric_tumor <- rep(0, ncol(classification_freq))
   classification_freq <- rbind(classification_freq,gastric= gastric_tumor) 
-
+  pancreas_tumor <- rep(0, ncol(classification_freq))
+  classification_freq <- rbind(classification_freq,pancreas= pancreas_tumor) 
+  eye_tumor <- rep(0, ncol(classification_freq))
+  classification_freq <- rbind(classification_freq,eye= eye_tumor) 
+  
   common_types <- intersect(rownames(classification_freq), colnames(classification_freq))
 
   uncorrected_prop_agree <- sum(diag(as.matrix(classification_freq[common_types, common_types])))/sum(as.matrix(classification_freq[common_types, common_types]))
@@ -62,9 +62,9 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
   agreement_tumor <- base::sort(agreement_tumor, decreasing=T)
   
   
-  sample_order <- c('kidney', 'soft_tissue', 'lymphocyte','peripheral_nervous_system', 'skin', 'colorectal', 'blood',
-                    'lung','breast', 'bone', 'prostate', 'urinary_tract', 'upper_aerodigestive', 'uterus', 'eye','gastric',
-                      'liver','ovary','pancreas', 'cervix',  'central_nervous_system',
+  sample_order <- c('soft_tissue', 'lymphocyte','peripheral_nervous_system','kidney', 'skin', 'colorectal', 'blood',
+                    'breast','lung', 'bone', 'prostate', 'urinary_tract', 'upper_aerodigestive', 'eye','gastric',
+                      'liver', 'uterus', 'ovary','pancreas', 'cervix',  'central_nervous_system',
                     'bile_duct', 'thyroid', 'esophagus')
   
   
@@ -86,12 +86,12 @@ plot_uncorrected_CL_tumor_class <- function(uncorrected_tumor_CL_dist, alignment
            height = 3, 
            fontface = heatmap_params$font_face, 
            angle_col=90, 
-           #filename = filename,
+           filename = filename,
            color=heatmap_params$color_vector)
 }
 
 # Supplementary Figure 4b
-plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumor_CL_dist, alignment) {
+plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumor_CL_cor, alignment) {
   alignment$compare_types <- alignment$lineage
   # select types/subtypes to compare between cell lines and tumors
   alignment[which(alignment$subtype=='Ewing sarcoma'),'compare_types'] <- 'Ewing sarcoma'
@@ -114,7 +114,7 @@ plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumo
   for(cancer in common_cancer_types) {
     cur_tumors <- dplyr::filter(alignment, type=='tumor' & compare_types==cancer)$sampleID
     cur_CLs <- dplyr::filter(alignment, type=='CL' & compare_types==cancer)$sampleID
-    cur_dist <- reshape2::melt(as.matrix(uncorrected_tumor_CL_dist[cur_tumors, cur_CLs]))
+    cur_dist <- reshape2::melt(as.matrix(uncorrected_tumor_CL_cor[cur_tumors, cur_CLs]))
     tumor_names <- c(tumor_names, as.character(cur_dist$Var1))
     CL_names <- c(CL_names, as.character(cur_dist$Var2))
     dist_list <- c(dist_list, cur_dist$value)
@@ -126,7 +126,7 @@ plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumo
   dist_df$tissue_types <- gsub("_", " ", dist_df$tissue_types)
   
   mean_dist <- aggregate(dist_df$dist_list, list(dist_df$tissue_types), 
-                         FUN = quantile, probs = 0.25) %>% dplyr::arrange(x)
+                         FUN = quantile, probs = 0.25) %>% dplyr::arrange(desc(x))
   
   mean_dist$Group.1 <- rev(mean_dist$Group.1)
   dist_df$tissue_types <- factor(dist_df$tissue_types, levels = mean_dist$Group.1)
@@ -140,7 +140,7 @@ plot_uncorrected_distribution_of_CL_tumor_distances <- function(uncorrected_tumo
     ggplot2::theme(legend.position = "none",
           text=ggplot2::element_text(size=6),
           axis.text = ggplot2::element_text(size=6)) +
-    ggplot2::xlab("distance between cell lines and tumors") + 
+    ggplot2::xlab("correlation between cell lines and tumors") + 
     ggplot2::ylab('cancer type')
   
   return(uncorrect_tumor_dist_spread)

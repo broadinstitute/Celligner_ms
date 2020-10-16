@@ -34,9 +34,9 @@ choose_eig_sign <- function(df, positive_for = 'tumor') {
 # calculate the tumor classification for a cell line
 # by identifying the most common tumor type within its 25
 # nearest tumor neighbors
-cell_line_tumor_class <- function(x, dist_mat, ann_mat, k=25) {
+cell_line_tumor_class <- function(x, dist_mat, ann_mat, k=25, decreasing = T) {
   names(x) <- rownames(dist_mat)
-  x <- sort(x)
+  x <- sort(x, decreasing = decreasing)
   tumor_type <- dplyr::filter(ann_mat, sampleID %in% names(x[1:k]))$lineage %>%
     table() %>%
     as.data.frame() %>%

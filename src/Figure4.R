@@ -4,6 +4,8 @@ library(tidyverse)
 source(here::here('src', 'analysis_helpers.R'))
 source(here::here('src', 'global_params.R'))
 
+# use the Celligner_info file for the alignment matrix used within these methods
+
 # figure 4a
 select_subtypes_plot <- function(alignment) {
   select_subtypes <- c("Kidney Cancer", "Skin Cancer", "Breast Cancer", 'Myeloma', "Lymphoma", "Leukemia")
@@ -16,8 +18,8 @@ select_subtypes_plot <- function(alignment) {
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) +
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = 'none',
-          text=ggplot2::element_text(size=6),
-          axis.text=ggplot2::element_text(size=6)) +
+          text=ggplot2::element_text(size=7),
+          axis.text=ggplot2::element_text(size=7)) +
     ggplot2::scale_fill_manual(values=c(`TRUE`='#EE4B33', `FALSE`='#999999')) + 
     ggplot2::guides(color=FALSE, fill=FALSE) +
     ggplot2::xlab("UMAP 1") +
@@ -30,23 +32,31 @@ select_subtypes_plot <- function(alignment) {
 # figure 4b
 breast_subtypes_plot <- function(alignment) {
   # consolidate subtype annotations
-  breast_subtypes <- c("luminal", "basal", 'HER2-enriched')
+  breast_subtypes <- c("luminal", "basal", 'HER2-enriched', 'basal A', 'basal B')
   breast_data <- dplyr::filter(alignment, disease=='Breast Cancer')
   rownames(breast_data) <- breast_data$sampleID
   breast_data[grep("luminal", breast_data$subtype), "subtype"] <- 'luminal'
-  breast_data[grep("basal", breast_data$subtype), "subtype"] <- 'basal'
   breast_data[grep("HER2", breast_data$subtype), "subtype"] <- 'HER2-enriched'
   breast_data[which(!(breast_data$subtype %in% breast_subtypes)), 'subtype'] <- NA
   
-  breast_subtypes_plot <- ggplot2::ggplot(breast_data, ggplot2::aes(UMAP_1, UMAP_2, fill=subtype, size=type)) +
-    ggplot2::geom_point(alpha=0.7, pch=21, color='white') +
-    ggplot2::geom_point(data = dplyr::filter(breast_data, type=='CL'), color='black', pch=21, alpha=0.7) +
+  breast_data$subtype_shape <- 'other'
+  breast_data[which(breast_data$subtype == 'basal A'), 'subtype_shape'] <- 'A'
+  breast_data[which(breast_data$subtype == 'basal B'), 'subtype_shape'] <- 'B'
+  
+  breast_data[grep("basal", breast_data$subtype), "subtype"] <- 'basal'
+ 
+  
+  breast_subtypes_plot <- ggplot2::ggplot(breast_data, ggplot2::aes(UMAP_1, UMAP_2, fill=subtype, color = type, size=type)) +
+    ggplot2::geom_point(data = filter(breast_data, !subtype_shape %in% c('A', 'B')), alpha=0.7, pch = 21) +
+    ggplot2::geom_point(data = filter(breast_data, subtype_shape == 'A'), pch = 22, show.legend = F, alpha=0.7) +
+    ggplot2::geom_point(data = filter(breast_data, subtype_shape == 'B'), pch = 25, show.legend = F, alpha=0.7) +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=1)) +
+    ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::theme_classic() + 
     ggplot2::theme(legend.position = c(0.85,0.6),
-                            text=ggplot2::element_text(size=6),
-          axis.text = ggplot2::element_text(size=6)) +
-    ggplot2::guides(size=FALSE) +
+                            text=ggplot2::element_text(size=9),
+          axis.text = ggplot2::element_text(size=7), axis.title = ggplot2::element_text(size=7)) +
+    ggplot2::guides(size=FALSE, color=FALSE, shape=FALSE) +
     ggplot2::guides(fill=ggplot2::guide_legend(title="")) +
     ggplot2::xlab("UMAP 1") +
     ggplot2::ylab("UMAP 2")
@@ -86,9 +96,9 @@ heme_types_plot <- function(alignment) {
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=1)) +
     ggplot2::theme_classic() + 
     ggplot2::theme(legend.position = c(0.91,0.55), 
-          text=ggplot2::element_text(size=6),
-          axis.text = ggplot2::element_text(size=6),
-          axis.title = ggplot2::element_text(size=5),
+          text=ggplot2::element_text(size=9),
+          axis.text = ggplot2::element_text(size=7),
+          axis.title = ggplot2::element_text(size=7),
           plot.margin = ggplot2::unit(c(0.2,1.3,0.2,0.2), "cm")) +
     guides(size=FALSE, fill=ggplot2::guide_legend(title="")) +
     ggplot2::scale_fill_manual(values=c(`ALL, unknown`='grey30',
@@ -122,11 +132,12 @@ plasma_cell_plot <- function(alignment) {
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=1)) +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) + 
     ggplot2::theme_classic() + 
-    ggplot2::theme(legend.position = c(1.1, 0.7),
-          text=ggplot2::element_text(size=6),
-          axis.text  = ggplot2::element_text(size = 6),
-          plot.margin = ggplot2::unit(c(0.2,1.5,0.2,0.2), 'cm')) +
-    ggplot2::guides(size=FALSE, color=FALSE) +
+    ggplot2::theme(legend.position = c(1.1, 0.4),
+          text=ggplot2::element_text(size=9),
+          axis.text = ggplot2::element_text(size = 7),
+          axis.title = ggplot2::element_text(size = 7),
+          plot.margin = ggplot2::unit(c(0.2,1.6,0.2,0.2), 'cm')) +
+    ggplot2::guides(size=FALSE, color=FALSE, fill=ggplot2::guide_legend(title="")) +
     ggplot2::scale_fill_manual(values=c(`Leukemia`='#3CB44B', `Lymphoma`='#00BFC4', `Myeloma`='#FABEBE')) +
     ggplot2::xlab("UMAP 1") +
     ggplot2::ylab("UMAP 2")
@@ -150,11 +161,12 @@ skin_subtypes_plot <- function(alignment) {
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white'), guide='none') +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=1), guide='none') +
     ggplot2::theme_classic() +
-    ggplot2::theme(legend.position = c(0.7, 0.6),
-          text=ggplot2::element_text(size=6),
+    ggplot2::theme(legend.position = c(0.75, 0.6),
+          text=ggplot2::element_text(size=9),
           legend.margin =ggplot2::margin(0,0,0,0),
           legend.box.margin=ggplot2::margin(-10,-30,-10,-10),
-          axis.text = ggplot2::element_text(size = 6)) +
+          axis.text = ggplot2::element_text(size = 7),
+          axis.title = ggplot2::element_text(size = 7)) +
     ggplot2::guides(size=FALSE, fill=ggplot2::guide_legend(title="")) +
     ggplot2::xlab("UMAP 1") + 
     ggplot2::ylab("UMAP 2")
@@ -203,10 +215,11 @@ kidney_subtypes_plot <- function(alignment) {
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white'), guide='none') +
     ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=1), guide='none') +
     ggplot2::theme_classic() +
-    ggplot2::theme(legend.position = c(1.05, 0.7),
-          text=ggplot2::element_text(size=6),
-          axis.text = ggplot2::element_text(size = 6),
-          plot.margin = ggplot2::unit(c(0.2,1.3,0.2,0.2), 'cm')) + 
+    ggplot2::theme(legend.position = c(1.1, 0.7),
+          text=ggplot2::element_text(size=9),
+          axis.text = ggplot2::element_text(size = 7),
+          axis.title = ggplot2::element_text(size = 7),
+          plot.margin = ggplot2::unit(c(0.2,1.8,0.2,0.2), 'cm')) + 
     ggplot2::labs(fill = "") +
     ggplot2::guides(size=FALSE) +
     ggplot2::xlab("UMAP 1") +

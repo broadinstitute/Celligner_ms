@@ -142,6 +142,9 @@ cluster_data <- function(seu_obj) {
   
   seu_obj %<>% Seurat::FindClusters(reduction = 'pca',
                                      resolution = global$mod_clust_res)
+  
+  seu_obj@meta.data$cluster <- seu_obj@meta.data$seurat_clusters
+  
   return(seu_obj)
   
   }
@@ -189,15 +192,15 @@ run_MNN <- function(CCLE_cor, TCGA_cor,  k1 = global$mnn_k_tumor, k2 = global$mn
   return(mnn_res)
 }
 
-# calculate the distance between tumors and cell lines in principal component space
-calc_tumor_CL_dist <- function(seu_obj) {
-  num_tumors <- nrow(dplyr::filter(seu_obj@meta.data, type=='tumor'))
-  num_samples <- nrow(seu_obj@meta.data)
-  tumor_CL_dist <- as.matrix(pdist::pdist(X=seu_obj[['pca']]@cell.embeddings[1:num_tumors,], 
-                                          Y=seu_obj[['pca']]@cell.embeddings[(num_tumors+1):num_samples,]))
+# calculate the correlation between tumors and cell lines in the Celligner_aligned_data
+calc_tumor_CL_cor <- function(Celligner_aligned_data, Celligner_info) {
+  tumors_samples <- dplyr::filter(Celligner_info, type=='tumor')$sampleID
+  cl_samples <- dplyr::filter(Celligner_info, type=='CL')$sampleID
+  tumor_CL_cor <- cor(t(Celligner_aligned_data[tumor_samples,]), t(Celligner_aligned_data[cl_samples,]),
+                      use='pairwise')
   
   
-  return(tumor_CL_dist)
+  return(tumor_CL_cor)
 }
 
 # run all Celligner methods

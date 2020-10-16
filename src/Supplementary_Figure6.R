@@ -2,177 +2,148 @@ library(here)
 library(magrittr)
 library(tidyverse)
 source(here::here('src', 'analysis_helpers.R'))
-source(here::here('src', 'global_params.R'))
+source(here::here('src', 'Figure3.R'))
 
-# Supplementary Figure 6a
-# re-ran run_Celligner, modifying the global param remove_cPCA_dims to:
-# c(), c(1), c(1,2), c(1,2,3), c(1,2,3,4), c(1,2,3,4,5), and c(1,2,3,4,5,6)
-# and observed the total number of mutual nearest neighbor pairs identified 
-# to produce the input to this method
-number_of_cPCs_plot <- function() {
-  num_cPCs <- c(0, 1, 2, 3, 4, 5, 6)
-  num_MNN <- c(8436,8879, 10074, 10220, 10415, 10248, 10273)
-  num_cPCs_used <- cbind.data.frame(num_cPCs, num_MNN)
-  num_cPCs_used$param_type <- ifelse(num_cPCs_used$num_cPCs==4, 'original parameter', 'modified parameter')
+# Parse correlation matrix from Yu et al.
+# to match cell line and tumor samples between Yu et al and Celligner
+# yu_tumor_CL_cor is taken from Supplementary Data 4 from 
+# Yu et al, Nature Communications 2019
+parse_yu_et_al_cor <- function(yu_tumor_CL_cor, Celligner_info) {
+  colnames(yu_tumor_CL_cor) <- gsub("_.*", "", colnames(yu_tumor_CL_cor))
+  yu_sample_info <- filter(Celligner_info,
+                           gsub("_.*", "", sampleID_CCLE_Name) %in% colnames(yu_tumor_CL_cor))
+  yu_sample_info <- yu_sample_info[-grep("TT_OESOPHAGUS", yu_sample_info$sampleID_CCLE_Name),]
+  yu_sample_info <- yu_sample_info[-grep("RESISTANT", yu_sample_info$sampleID_CCLE_Name),]
   
-  cPCs_MNN <- ggplot2::ggplot(num_cPCs_used, ggplot2::aes(num_cPCs, num_MNN, shape=param_type, group= interaction('param_type'))) +
-    ggplot2::geom_line(color='gray80') + 
-    ggplot2::geom_point() +
-    ggplot2::xlab('number of cPCs used') +
-    ggplot2::ylab('number of MNN pairs') +
-    ggplot2::scale_shape_manual(values=c(`modified parameter`=16, `original parameter`=8)) +
-    ggplot2::guides(shape=ggplot2::guide_legend(title="")) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(legend.position='bottom', 
-          text = ggplot2::element_text(size=8),
-          axis.title = ggplot2::element_text(size=6), 
-          axis.text = ggplot2::element_text(size=6),
-          legend.margin =ggplot2::margin(0,0,0,0),
-          legend.box.margin=ggplot2::margin(-10,-30,-10,-30))
+  rownames(yu_sample_info) <- gsub("_.*", "", yu_sample_info$sampleID_CCLE_Name)
+  colnames(yu_tumor_CL_cor) <- yu_sample_info[colnames(yu_tumor_CL_cor),'sampleID']
   
-  return(cPCs_MNN)
+  yu_tumor_CL_cor <- yu_tumor_CL_cor[intersect(Celligner_info$sampleID, rownames(yu_tumor_CL_cor)),]
+  yu_tumor_CL_cor <- as.matrix(yu_tumor_CL_cor)
+  return(yu_tumor_CL_cor)
+} 
+
+# Get nearest neighbor classifications for Yu et al method
+get_yu_et_al_classifications <- function(yu_tumor_CL_cor, Yu_tumor_ann) {
+  Yu_tumor_ann$sampleID <- substr(Yu_tumor_ann$sample,1,nchar(Yu_tumor_ann$sample)-1)
+  Yu_tumor_ann$lineage <- Yu_tumor_ann$Disease
+  Yu_tumor_ann[which(Yu_tumor_ann$lineage=='COADREAD'),'lineage'] <- "COAD_READ"
+  
+  yu_tumor_CL_classes <- get_cell_line_tumor_class(yu_tumor_CL_cor, Yu_tumor_ann)
+
+  return(yu_tumor_CL_classes)
+}
+
+# Get updated Celligner tumor/CL correlation using subset of data from
+# Yu et al 
+get_Celligner_updated_cor <- function(Celligner_aligned_data, yu_tumor_CL_cor) {
+  common_CLs <- colnames(yu_tumor_CL_cor)
+  common_tumors <- rownames(yu_tumor_CL_cor)
+  
+  Celligner_cor <- cor(Celligner_aligned_data[,common_tumors], 
+                       Celligner_aligned_data[,common_CLs], use='pairwise')
+  
+  return(Celligner_cor)
   
 }
 
-# Supplementary Figure 6b
-# re-ran run_Celligner, modifying the global param mnn_k_CL to:
-# 3, 4, 5, 7, and 10 to produce the input to this method
-# Then ran cell_line_tumor_class and compared the proportion of agreement
-# between the cell line tumor classes calculated at mnn_k_CL = 5 to the 
-# cell line tumor classes calculated at the other parameter values.
-modified_k_CL_plot <- function() {
-  k_CL_agreement <- c(0.8879103, 0.9215372, 1.0000000, 0.9271417, 0.9095276)
-  k_CL_names <- c(3, 4, 5, 7, 10)
-  k_CL_type <- c('modified parameter', 'modified parameter', 'original parameter', 'modified parameter', 'modified parameter' )
-  k_CL_df <- cbind.data.frame(k_CL_agreement, k_CL_names, k_CL_type)
-  k_CL_agreement <- ggplot2::ggplot(k_CL_df, 
-                                    ggplot2::aes(k_CL_names, k_CL_agreement, shape= k_CL_type, group = interaction('k_CL_type'))) + 
-    ggplot2::geom_line(col='gray80') + 
-    ggplot2::geom_point() + 
-    ggplot2::xlab("number of mutual nearest neighbors in cell line data") +
-    ggplot2::ylab("agreement with original cell line tumor type classifications") +
-    ggplot2::guides(shape=ggplot2::guide_legend(title="")) +
-    ggplot2::scale_shape_manual(values=c(`modified parameter`=16, `original parameter`=8)) +
-    ggplot2::theme_classic() +
-    ggplot2::theme(legend.position='bottom', 
-          text = ggplot2::element_text(size=8),
-          axis.title = ggplot2::element_text(size=6), 
-          axis.text = ggplot2::element_text(size=6),
-          legend.margin =ggplot2::margin(0,0,0,0), 
-          legend.box.margin=ggplot2::margin(-10,-30,-10,-30))
+# Get updated Celligner classifications using updated correlation matrix
+# Yu_tumor_ann is taken from Supplementary Data 1 from 
+# Yu et al, Nature Communications 2019
+get_Celligner_updated_classes <- function(Celligner_cor, Yu_tumor_ann) {
+  Yu_tumor_ann$sampleID <- substr(Yu_tumor_ann$sample,1,nchar(Yu_tumor_ann$sample)-1)
+  Yu_tumor_ann$lineage <- Yu_tumor_ann$Disease
+  Yu_tumor_ann[which(Yu_tumor_ann$lineage=='COADREAD'),'lineage'] <- "COAD_READ"
   
-  return(k_CL_agreement)
+  Celligner_tumor_CL_classes <- get_cell_line_tumor_class(Celligner_cor, Yu_tumor_ann)
+  
+  return(Celligner_tumor_CL_classes)
 }
 
-# Supplementary Figure 6c
-# re-ran run_Celligner, modifying the global param mnn_k_tumor to:
-# 40, 45, 50, 55, and 60 to produce the input to this method. 
-# Then ran cell_line_tumor_class and compared the proportion of agreement
-# between the cell line tumor classes calculated at mnn_k_tumor = 50 to the 
-# cell line tumor classes calculated at the other parameter values.
-modified_k_tumor_plot <- function() {
-  k_tumor_agreement <- c(0.9375500, 0.9495596, 1.0000000, 0.9623699, 0.9495596)
-  k_tumor_names <- c(40, 45, 50, 55, 60)
-  k_tumor_type <- c('modified parameter', 'modified parameter', 'original parameter', 'modified parameter', 'modified parameter' )
-  k_tumor_df <- cbind.data.frame(k_tumor_agreement, k_tumor_names, k_tumor_type)
-  k_tumor_agreement <- ggplot2::ggplot(k_tumor_df, 
-                                       ggplot2::aes(k_tumor_names, k_tumor_agreement, shape= k_tumor_type, group = interaction('k_tumor_type'))) +
-    ggplot2::geom_line(color='gray80') +
-    ggplot2::geom_point() +
-    ggplot2::xlab("number of mutual nearest neighbors in tumor data") +
-    ggplot2::ylab("agreement with original cell line tumor type classifications") +
-    ggplot2::guides(shape=ggplot2::guide_legend(title="")) +
-    ggplot2::scale_shape_manual(values=c(`modified parameter`=16, `original parameter`=8))+
-    ggplot2::theme_classic() +
-    ggplot2::theme(legend.position='bottom',
-          text = ggplot2::element_text(size=8),
-          axis.title = ggplot2::element_text(size=6),
-          axis.text = ggplot2::element_text(size=6), 
-          legend.margin =ggplot2::margin(0,0,0,0), 
-          legend.box.margin=ggplot2::margin(-10,-30,-10,-30))
+# Compare classification accuracy between the Yu et al method and Celligner
+# CL_annotations is taken from Supplementary Data 2 from 
+# Yu et al, Nature Communications 2019
+get_classification_accuracy <- function(CL_annotations, Celligner_info,
+                                        yu_tumor_CL_classes, Celligner_tumor_CL_classes) {
   
-  return(k_tumor_agreement)
+  CL_annotations$CCLE <- gsub("_.*", "", CL_annotations$CCLE_name)
+  yu_sample_info <- filter(Celligner_info,
+                           gsub("_.*", "", sampleID_CCLE_Name) %in% CL_annotations$CCLE)
+  yu_sample_info <- yu_sample_info[-grep("TT_OESOPHAGUS", yu_sample_info$sampleID_CCLE_Name),]
+  yu_sample_info <- yu_sample_info[-grep("RESISTANT", yu_sample_info$sampleID_CCLE_Name),]
+  
+  rownames(yu_sample_info) <- gsub("_.*", "", yu_sample_info$sampleID_CCLE_Name)
+  
+  CL_annotations$sampleID <- yu_sample_info[CL_annotations$CCLE,'sampleID']
+  rownames(CL_annotations) <- CL_annotations$sampleID
+  
+  CL_annotations[names(yu_tumor_CL_classes), 'Yu_classification'] <- yu_tumor_CL_classes 
+  CL_annotations[names(Celligner_tumor_CL_classes), 'Celligner_classification'] <- Celligner_tumor_CL_classes  
+  CL_annotations[which(CL_annotations$disease == 'COADREAD'), 'disease'] <- "COAD_READ"
+  
+  print(length(which(CL_annotations$disease == CL_annotations$Yu_classification))/nrow(CL_annotations))
+  print(length(which(CL_annotations$disease == CL_annotations$Celligner_classification))/nrow(CL_annotations))
+  
+  return(CL_annotations)
   
 }
 
-# Supplementary Figure 6d
-# re-ran run_Celligner, removing all tumors annotated as skin
-# to produce the input to this method
-remove_skin_tumors_plot <- function(rm_skin_tumors_alignment) {
-  rm_skin_tumors <- ggplot2::ggplot(rm_skin_tumors_alignment, 
-                                    ggplot2::aes(UMAP_1, UMAP_2, fill=lineage=='skin', color=type, size=type)) +
-    ggplot2::geom_point(alpha=0.7, pch=21) +
-    ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
-    ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) +
-    ggplot2::theme_classic() + 
-    ggplot2::xlab("UMAP 1") + 
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme(legend.position = 'right', 
-          text=ggplot2::element_text(size=6),
-          axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="skin")
+# Calculate median correlation per cancer type (using Yu et al categories)
+median_cor <- function(cor_mat, Yu_tumor_ann) {
+  Yu_tumor_ann$sampleID <- substr(Yu_tumor_ann$sample,1,nchar(Yu_tumor_ann$sample)-1)
+  Yu_tumor_ann[which(Yu_tumor_ann$Disease=='COADREAD'),'Disease'] <- "COAD_READ"
+  yu_tumor_types <- unique(Yu_tumor_ann$Disease)
   
-  return(rm_skin_tumors)
+  med_cor_mat <- matrix(data=NA, nrow=length(yu_tumor_types), ncol=ncol(cor_mat))
+  rownames(med_cor_mat) <- yu_tumor_types
+  colnames(med_cor_mat) <- colnames(cor_mat)
+  for(tcga in yu_tumor_types) {
+    cur_tumors <- intersect(filter(Yu_tumor_ann, Disease  == tcga)$sampleID, rownames(cor_mat))
+    cur_cor_med <- apply(cor_mat[cur_tumors,], 2, function(x) median(x))
+    med_cor_mat[tcga,] <- cur_cor_med
+  }
+  
+  return(med_cor_mat)
+  
 }
 
-# Supplementary Figure 6d
-remove_skin_tumors_highlight <- function(rm_skin_tumors_alignment) {
-  rm_skin_tumors_alignment$lineage <- gsub("_", " ", rm_skin_tumors_alignment$lineage)
-  rm_skin_tumors_highlight <- ggplot2::ggplot(dplyr::filter(rm_skin_tumors_alignment,
-                                            UMAP_1 < 10 & UMAP_1 > 6 & UMAP_2 < -4.8 & UMAP_2 > -8),
-                                            ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, color=type, size=type)) +
-    ggplot2::geom_point(alpha=0.7, pch=21) +
-    ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
-    ggplot2::scale_size_manual(values=c(`CL`=2, `tumor`=1.5)) +
-    ggplot2::theme_classic() +
-    ggplot2::xlab("UMAP 1") +
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme(legend.position = 'right',
-          text=ggplot2::element_text(size=6),
-          axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="lineage") +
-    ggplot2::guides(fill=ggplot2::guide_legend(ncol=2))
+# Supplementary Figure 6
+create_comparison_plots <- function(cur_cancer_type, yu_tumor_CL_cor, Celligner_cor,
+                                    Yu_tumor_ann, CL_annotations) {
+  rownames(CL_annotations) <- CL_annotations$sampleID
+  yu_median_cor <- median_cor(yu_tumor_CL_cor, Yu_tumor_ann)
+  Celligner_median_cor <- median_cor(Celligner_cor, Yu_tumor_ann)
   
-  return(rm_skin_tumors_highlight)
+  cur_samples <- filter(CL_annotations, disease == cur_cancer_type)$sampleID
+  cur_yu <- yu_median_cor[cur_cancer_type, cur_samples] %>% t()
+  cur_yu <- cur_yu[1,]
+  
+  cur_celligner <- Celligner_median_cor[cur_cancer_type, cur_samples] %>% t()
+  cur_celligner <- cur_celligner[1,]
+  
+  cur_yu_celligner_compare <- data.frame(yu_et_al = cur_yu, 
+                                         celligner = cur_celligner, 
+                                         sample = cur_samples,
+                                         cur_class = ifelse(CL_annotations[cur_samples,]$Celligner_classification == cur_cancer_type,
+                                                            TRUE, FALSE))
+  
+  cur_comparison_plot <- ggplot(cur_yu_celligner_compare, aes(celligner, yu_et_al)) + 
+    geom_point(aes(color=cur_class)) + 
+    theme_classic() +
+    xlab('Celligner') + ylab("Yu et al") +
+    scale_color_manual(values=c(`TRUE`="#00BFC4", `FALSE`= "#F8766D")) +
+    ggpubr::stat_cor(label.y.npc = 'top', size=2.8, color='black') +
+    ggplot2::geom_smooth(method = 'lm', color='black') + ggtitle(cur_cancer_type) +
+    theme(legend.position = 'none', text = element_text(size=6), 
+          axis.text = element_text(size=4), axis.title = element_text(size=6))
+  
+  return(cur_comparison_plot)
+  
 }
 
-# Supplementary Figure 6e
-# re-ran run_Celligner, removing all cell lines annotated as skin
-# to produce the input to this method
-remove_skin_CLs_plot <- function(rm_skin_CLs_alignment) {
-  rm_skin_CLs <- ggplot2::ggplot(rm_skin_CLs_alignment, 
-                                 ggplot2::aes(UMAP_1, UMAP_2, fill=lineage=='skin', color=type, size=type)) + 
-    ggplot2::geom_point(alpha=0.7, pch=21) +
-    ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
-    ggplot2::scale_size_manual(values=c(`CL`=1.5, `tumor`=0.75)) +
-    ggplot2::theme_classic() + 
-    ggplot2::xlab("UMAP 1") + 
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme(legend.position = 'right',
-          text=ggplot2::element_text(size=6),
-          axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="skin")
-  
-  return(rm_skin_CLs)
-}
 
-# Supplementary Figure 6e
-remove_skin_CLs_highlight <- function(rm_skin_CLs_alignment) {
-  rm_skin_CLs_alignment$lineage <- gsub("_", " ", rm_skin_CLs_alignment$lineage)
-  rm_skin_CLs_highlight <- ggplot2::ggplot(dplyr::filter(rm_skin_CLs_alignment, 
-                                         UMAP_1 < 11 & UMAP_1 > 6 & UMAP_2 < 5 & UMAP_2 > 1),
-                                         ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, color=type, size=type)) +
-    ggplot2::geom_point(alpha=0.7, pch=21) +
-    ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
-    ggplot2::scale_size_manual(values=c(`CL`=2, `tumor`=1.5)) +
-    ggplot2::theme_classic() + 
-    ggplot2::xlab("UMAP 1") +
-    ggplot2::ylab("UMAP 2") +
-    ggplot2::theme(legend.position = 'right',
-          text=ggplot2::element_text(size=6), 
-          axis.text=ggplot2::element_text(size=6)) +
-    ggplot2::labs(fill="lineage") +
-    ggplot2::guides(fill=ggplot2::guide_legend(ncol=2))
-  
-  return(rm_skin_CLs_highlight)
-}
+
+
+
+
+
