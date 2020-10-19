@@ -90,6 +90,9 @@ load_tumor_CL_cor <- function(data_dir, cor_file = 'tumor_CL_cor.csv') {
 
 load_data <- function(data_dir, tumor_file = 'TCGA_mat.tsv', cell_line_file = 'CCLE_mat.csv', 
                       annotation_file = 'Celligner_info.csv', hgnc_file = "hgnc_complete_set_7.24.2018.txt") {
+  
+  TCGA_mat <- load_TCGA_mat(data_dir, tumor_file)
+  CCLE_mat <- load_CCLE_mat(data_dir, cell_line_file)
   hgnc.complete.set <- data.table::fread(file.path(data_dir, hgnc_file)) %>% as.data.frame()
   
   common_genes <- intersect(colnames(TCGA_mat), hgnc.complete.set$symbol)

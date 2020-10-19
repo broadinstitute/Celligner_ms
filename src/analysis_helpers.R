@@ -20,6 +20,7 @@ choose_eig_sign <- function(df, positive_for = 'tumor') {
     flip_sign <- 1
   }
   greater_type <- df %>% 
+    dplyr::filter(!is.na(type)) %>%
     dplyr::group_by(type) %>% 
     dplyr::summarise(avg_proj = mean(proj)) %>% 
     dplyr::arrange(dplyr::desc(avg_proj)) %>% 

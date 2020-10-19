@@ -8,7 +8,7 @@ source(here::here('src', 'global_params.R'))
 Celligner_alignment_plot <- function(alignment) {
   Celligner_alignment <- ggplot2::ggplot(alignment, 
                                          ggplot2::aes(UMAP_1, UMAP_2, fill=lineage, size=type, color = type)) +
-    ggplot2::geom_point(alpha=0.6, pch=21)  +
+    ggplot2::geom_point(pch=21, alpha=0.7)  +
     ggplot2::scale_color_manual(values=c(`CL`='black', `tumor`='white')) +
     ggplot2::scale_size_manual(values=c(`CL`=1, `tumor`=0.75)) +
     ggplot2::theme_classic() + 

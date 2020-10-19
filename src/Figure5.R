@@ -113,6 +113,9 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
 dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4A', alignment,
                                              cur_gene_ensembl = 'ENSG00000101076', cur_type = 'liver') {
   
+  int_cell_lines <- intersect(rownames(CCLE_mat), rownames(CRISPR))
+  
+  
   other_dep_exp <- cbind.data.frame(CCLE_mat[int_cell_lines,cur_gene_ensembl],
                                     CRISPR[int_cell_lines, cur_gene_symbol],
                                     ifelse(int_cell_lines %in% dplyr::filter(alignment, cluster %in% c(12,28) &
@@ -144,13 +147,17 @@ dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4
 # CCLE_count data source is depmap.org, DepMap Public 19Q4 CCLE_RNAseq_reads.csv
 # genes were subset to the genes used elsewhere (a set of 19,188 genes 
 # that are common to both datasets and are not non-coding RNA or pseudogenes)
-undifferentiated_DE_analysis <- function(aligment, clusters = c(12,28), CCLE_count, gene_stats) {
+undifferentiated_DE_analysis <- function(aligment, clusters = c(12,28), CCLE_count, gene_stats, CCLE_mat) {
+  colnames(CCLE_count) <- stringr::str_match(colnames(CCLE_count), '\\((.+)\\)')[,2]
+  CCLE_count <- CCLE_count[,colnames(CCLE_mat)]
+  rownames(gene_stats) <- gene_stats$Gene
+  
   vec <- (dplyr::filter(alignment, type=='CL')$cluster %in% clusters) %>%
     set_names(dplyr::filter(alignment, type=='CL')$sampleID)
   
   covars <- dplyr::filter(alignment, type=='CL') %>% 
-    dplyr::select(sampleID, lineage) %>%
-    tibble::column_to_rownames(var = 'sampleID')
+    dplyr::select(lineage)
+  rownames(covars) <- rownames(dplyr::filter(alignment, type=='CL'))
   
   cell_line_info <- dplyr::filter(alignment, type=='CL')
   gene_info <- gene_stats
@@ -221,7 +228,8 @@ GSEA_on_undifferentiated_DE <- function(de_table, gsc_data, filepath) {
   GSEA_data$`adjusted pval` <- signif(GSEA_data$padj, 3)
   GSEA_data$NES <- signif(GSEA_data$NES, 3)
   
-  png(filepath, height=2, width=3.5, units='in', res=200)
+  setEPS()
+  postscript(filepath, height=2, width=3.5)
   grid.table(GSEA_data[,c('pathway', 'adjusted pval', 'NES')], theme=table_theme, rows=NULL)
   dev.off()
 }
@@ -235,7 +243,7 @@ run_differential_drug_sensitivities <- function(alignment,
                                                 sample.info) {
   # switch to CCLE names
   new_rownames <- plyr::llply(rownames(secondary.screen.replicate.collapsed.logfold.change), function(x) {
-    sample.info$CCLE_name[sample.info$DepMap_ID == x]
+    sample.info$CCLE_Name[sample.info$DepMap_ID == x]
   }) %>% 
     as.character()
   
@@ -247,7 +255,7 @@ run_differential_drug_sensitivities <- function(alignment,
     ]
   
   # get shared cell lines for celligner and prism, and format names
-  prism_shared_cell_lines <- rownames(secondary.screen.replicate.collapsed.logfold.change)[rownames(secondary.screen.replicate.collapsed.logfold.change) %in% alignment$sampleID]
+  prism_shared_cell_lines <- rownames(secondary.screen.replicate.collapsed.logfold.change)[rownames(secondary.screen.replicate.collapsed.logfold.change) %in% alignment$sampleID_CCLE_Name]
   prism_data <- secondary.screen.replicate.collapsed.logfold.change[prism_shared_cell_lines, prism_metadata_one_dose$column_name] %>% t()
   prism_data_with_names <- merge(prism_data, secondary.screen.replicate.collapsed.treatment.info[,c("column_name", "name")], by.x = "row.names", by.y = "column_name")
   prism_data_with_names %<>% tibble::column_to_rownames("Row.names")
@@ -274,14 +282,15 @@ run_differential_drug_sensitivities <- function(alignment,
   
   # compounds and cell lines to test
   cpds_to_test <- colnames(prism_data_formatted_finally)
-  shared_cell_lines <- intersect(rownames(prism_data_formatted_finally), alignment$sampleID)
+  shared_cell_lines <- intersect(rownames(prism_data_formatted_finally), alignment$sampleID_CCLE_Name)
   
-  rownames(alignment) <- alignment$sampleID
+  rownames(alignment) <- alignment$sampleID_CCLE_Name
   is_undifferentiated <- alignment[shared_cell_lines,'cluster'] %in% clusters
   # fit linear model
   lmstats_out_chemical_prism <- run_lm_stats_limma(mat = prism_data_formatted_finally[shared_cell_lines, cpds_to_test], 
                                                          vec = is_undifferentiated, 
-                                                         covars = alignment[shared_cell_lines,'lineage'])
+                                                         covars = alignment[match(shared_cell_lines,alignment$sampleID_CCLE_Name),
+                                                                            'lineage'])
   
  return(lmstats_out_chemical_prism)
 }
@@ -334,9 +343,9 @@ run_differential_dependency_analysis <- function(CRISPR, alignment, clusters = c
   vec <- (dplyr::filter(alignment, type=='CL')$cluster %in% clusters) %>%
     set_names(dplyr::filter(alignment, type=='CL')$sampleID)
   covars <- dplyr::filter(alignment, type=='CL') %>% 
-    dplyr::select(sampleID, lineage) %>%
-    tibble::column_to_rownames(var = 'sampleID')
-  
+    dplyr::select(lineage)
+  rownames(covars) <- dplyr::filter(alignment, type=='CL')$sampleID
+
   common_CLs <- intersect(rownames(CRISPR), names(vec))
   DE_res <- run_lm_stats_limma(CRISPR[common_CLs,],
                                      vec[common_CLs],

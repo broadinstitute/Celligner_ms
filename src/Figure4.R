@@ -7,7 +7,7 @@ source(here::here('src', 'global_params.R'))
 # use the Celligner_info file for the alignment matrix used within these methods
 
 # figure 4a
-select_subtypes_plot <- function(alignment) {
+make_select_subtypes_plot <- function(alignment) {
   select_subtypes <- c("Kidney Cancer", "Skin Cancer", "Breast Cancer", 'Myeloma', "Lymphoma", "Leukemia")
   
   select_subtypes_overall_plot <- ggplot2::ggplot(alignment,
@@ -30,7 +30,7 @@ select_subtypes_plot <- function(alignment) {
 }
 
 # figure 4b
-breast_subtypes_plot <- function(alignment) {
+make_breast_subtypes_plot <- function(alignment) {
   # consolidate subtype annotations
   breast_subtypes <- c("luminal", "basal", 'HER2-enriched', 'basal A', 'basal B')
   breast_data <- dplyr::filter(alignment, disease=='Breast Cancer')
@@ -65,7 +65,7 @@ breast_subtypes_plot <- function(alignment) {
 }
 
 # figure 4c
-heme_types_plot <- function(alignment) {
+make_heme_types_plot <- function(alignment) {
   heme_types <- c('Myeloma', "Leukemia", "Lymphoma")
   heme_data <- dplyr::filter(alignment, disease %in% heme_types)
   rownames(heme_data) <- heme_data$sampleID
@@ -116,7 +116,7 @@ heme_types_plot <- function(alignment) {
 }
 
 # figure 4d
-plasma_cell_plot <- function(alignment) {
+make_plasma_cell_plot <- function(alignment) {
   heme_types <- c('Myeloma', "Leukemia", "Lymphoma")
   heme_data <- dplyr::filter(alignment, disease %in% heme_types)
   rownames(heme_data) <- heme_data$sampleID
@@ -147,7 +147,7 @@ plasma_cell_plot <- function(alignment) {
 }
 
 # figure 4e
-skin_subtypes_plot <- function(alignment) {
+make_skin_subtypes_plot <- function(alignment) {
   skin_subtype_data <- dplyr::filter(alignment, disease == 'Skin Cancer' & UMAP_2 <1 & UMAP_1 > 1)
   skin_subtypes <- c('transitory', 'melanocytic', "undifferentiated", "neural crest-like")
   skin_subtype_data[which(!(skin_subtype_data$subtype %in% skin_subtypes)), 'subtype'] <- NA
@@ -176,7 +176,7 @@ skin_subtypes_plot <- function(alignment) {
 }
 
 # figure 4e inset
-skin_subtypes_highlight <- function(alignment) {
+make_skin_subtypes_highlight <- function(alignment) {
   skin_subtype_data <- dplyr::filter(alignment, disease == 'Skin Cancer' & UMAP_2 <1 & UMAP_1 > 1)
   skin_subtypes <- c('transitory', 'melanocytic', "undifferentiated", "neural crest-like")
   skin_subtype_data[which(!(skin_subtype_data$subtype %in% skin_subtypes)), 'subtype'] <- NA
@@ -202,7 +202,7 @@ skin_subtypes_highlight <- function(alignment) {
 
 
 # figure 4f
-kidney_subtypes_plot <- function(alignment) {
+make_kidney_subtypes_plot <- function(alignment) {
   kidney_subtype_data <- dplyr::filter(alignment, disease=='Kidney Cancer')
   kidney_subtypes <- c('wilms tumor', 'papillary renal cell carcinoma', "kidney clear cell carcinoma", "kidney chromophobe")
   kidney_subtype_data[which(!(kidney_subtype_data$subtype %in% kidney_subtypes)), 'subtype'] <- NA
