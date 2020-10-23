@@ -90,9 +90,9 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
   sox10_dep_exp$`skin clusters` <- as.factor(sox10_dep_exp$`skin clusters`)
 
   sox10_dep_exp_plot <- ggplot2::ggplot(sox10_dep_exp, ggplot2::aes(expression, gene_effect)) +
-    ggplot2::geom_point(alpha=0.3, color = '#BFBFBF') +
+    ggplot2::geom_point(alpha=0.5, fill = '#BFBFBF', color='white', pch=21, size=1.5) +
     ggplot2::geom_point(data=dplyr::filter(sox10_dep_exp, `skin clusters`!="other samples"), 
-                        ggplot2::aes(color=`skin clusters`), alpha=0.7) +
+                        ggplot2::aes(fill=`skin clusters`), alpha=0.7, pch=21, color='gray10', size=1.75) +
     ggplot2::theme_classic() +
     ggplot2::xlab("SOX10 expression") +
     ggplot2::ylab("SOX10 dependency") +
@@ -103,7 +103,7 @@ SOX10_dependency_expression_plot <- function(CCLE_mat, CRISPR, alignment) {
           legend.justification = "left",
           legend.spacing.y = ggplot2::unit(.0001, 'cm'),
           plot.margin = ggplot2::unit(c(0.2,1,0.2,0.2), "cm")) +
-    ggplot2::guides(color = ggplot2::guide_legend(nrow=2, byrow=TRUE, title="skin \nclusters"))
+    ggplot2::guides(fill = ggplot2::guide_legend(nrow=2, byrow=TRUE, title="skin \nclusters"))
 
   return(sox10_dep_exp_plot)
 }
@@ -126,9 +126,9 @@ dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4
   colnames(other_dep_exp) <- c("expression", "gene_effect", "clusters", "cur_lineage")
   
   dep_exp_plot <- ggplot2::ggplot(other_dep_exp, ggplot2::aes(expression, gene_effect)) +
-    ggplot2::geom_point(alpha=0.3, color = '#BFBFBF') +
+    ggplot2::geom_point(alpha=0.5, fill = '#BFBFBF', color='white', size=1.5, pch=21) +
     ggplot2::geom_point(data=dplyr::filter(other_dep_exp, cur_lineage==T), 
-                        ggplot2::aes(color=`clusters`), alpha=0.7) +
+                        ggplot2::aes(fill=`clusters`), alpha=0.7, pch=21, color='gray10', size=1.75) +
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = 'bottom',
           text=ggplot2::element_text(size=7),
@@ -137,7 +137,7 @@ dependency_expression_plot <- function(CCLE_mat, CRISPR, cur_gene_symbol = 'HNF4
           legend.justification = "left", legend.spacing.y = ggplot2::unit(.0001, 'cm')) +
     ggplot2::xlab(paste(cur_gene_symbol, "expression")) +
     ggplot2::ylab(paste(cur_gene_symbol, "dependency")) +
-    ggplot2::guides(color = ggplot2::guide_legend(nrow=2, byrow=TRUE))
+    ggplot2::guides(fill = ggplot2::guide_legend(nrow=2, byrow=TRUE))
   
   return(dep_exp_plot)
   
@@ -191,8 +191,9 @@ undifferentiated_DE_plot <- function(de_table) {
   de_table$`EMT genes` <- ifelse(de_table$logFC > 0, 'up regulated', 'down regulated')
   
   undiff_de_analysis_plot <- ggplot2::ggplot(de_table, ggplot2::aes(logFC, -log10(P.Value))) + 
-    ggplot2::geom_point(color = '#BFBFBF') + 
-    ggplot2::geom_point(data=dplyr::filter(de_table, EMT != 'NA'), ggplot2::aes(logFC, -log10(P.Value), color=`EMT genes`)) +
+    ggplot2::geom_point(fill = '#BFBFBF', color='white', pch=21, stroke=0.2, alpha=0.5) + 
+    ggplot2::geom_point(data=dplyr::filter(de_table, EMT != 'NA'), ggplot2::aes(logFC, -log10(P.Value), fill=`EMT genes`, color=`EMT genes`), pch=21, color='white', size=1.75) +
+    ggplot2::scale_fill_manual(values=c(`down regulated`='#1F295C', `up regulated`='#90191C')) +
     ggplot2::scale_color_manual(values=c(`down regulated`='#1F295C', `up regulated`='#90191C')) +
     ggrepel::geom_text_repel(data = dplyr::filter(de_table, EMT != 'NA') %>% 
                                dplyr::arrange(dplyr::desc(abs(logFC))) %>% 
@@ -228,8 +229,7 @@ GSEA_on_undifferentiated_DE <- function(de_table, gsc_data, filepath) {
   GSEA_data$`adjusted pval` <- signif(GSEA_data$padj, 3)
   GSEA_data$NES <- signif(GSEA_data$NES, 3)
   
-  setEPS()
-  postscript(filepath, height=2, width=3.5)
+  pdf(filepath, height=2, width=3.5)
   grid.table(GSEA_data[,c('pathway', 'adjusted pval', 'NES')], theme=table_theme, rows=NULL)
   dev.off()
 }
@@ -240,7 +240,7 @@ GSEA_on_undifferentiated_DE <- function(de_table, gsc_data, filepath) {
 run_differential_drug_sensitivities <- function(alignment,
                                                 secondary.screen.replicate.collapsed.logfold.change, 
                                                 secondary.screen.replicate.collapsed.treatment.info,
-                                                sample.info) {
+                                                sample.info, clusters = c(12,28)) {
   # switch to CCLE names
   new_rownames <- plyr::llply(rownames(secondary.screen.replicate.collapsed.logfold.change), function(x) {
     sample.info$CCLE_Name[sample.info$DepMap_ID == x]
@@ -315,9 +315,10 @@ plot_differential_drug_sensitivities <- function(lmstats_out_chemical_prism,
   
   undifferentiated_differential_drug <- lmstats_out_chemical_prism_with_annots %>% 
     ggplot2::ggplot(aes(EffectSize, -log10(p.value))) + 
-    ggplot2::geom_point(color = "#BFBFBF") + 
+    ggplot2::geom_point(fill = "#BFBFBF", color = 'white', pch=21, stroke=0.2, alpha=0.5) + 
     ggplot2::geom_point(data = dplyr::filter(lmstats_out_chemical_prism_with_annots, moa_trimmed != 'NA'), 
-               aes(EffectSize, -log10(p.value), color = moa_trimmed)) +
+               aes(EffectSize, -log10(p.value), fill = moa_trimmed), size=1.75, color='white', pch=21) +
+    ggplot2::scale_fill_manual(values=c(`EGFR inhibitor`="#90191C", `Tubulin polymerization inhibitor`="#1F295C")) + 
     ggplot2::scale_color_manual(values=c(`EGFR inhibitor`="#90191C", `Tubulin polymerization inhibitor`="#1F295C")) + 
     ggrepel::geom_text_repel(data = rbind(lmstats_out_chemical_prism_with_annots[grepl("EGFR", lmstats_out_chemical_prism_with_annots$MOA),] %>%
                                             dplyr::arrange(-EffectSize) %>% head(3),
@@ -325,8 +326,8 @@ plot_differential_drug_sensitivities <- function(lmstats_out_chemical_prism,
                                             dplyr::arrange(EffectSize) %>% head(3)),
                              ggplot2::aes(label = Gene, color=moa_trimmed), show.legend = FALSE, size=3) + 
     ggplot2::theme_classic() +
-    ggplot2::labs(color = "Drug class") + 
-    ggplot2::guides(color = ggplot2::guide_legend(nrow=2,byrow=TRUE), alpha=FALSE) +
+    ggplot2::labs(fill = "Drug class") + 
+    ggplot2::guides(fill = ggplot2::guide_legend(nrow=2,byrow=TRUE), alpha=FALSE) +
     ggplot2::theme(legend.position = "bottom",
           text=ggplot2::element_text(size=8),
           axis.text = ggplot2::element_text(size=6),
@@ -365,13 +366,14 @@ plot_differentiated_dependencies <- function(DE_res) {
   DE_res$label <- factor(DE_res$label, levels = c('more dependent', 'less dependent', 'NA'))
   
   CL_cluster_dif_dep_plot <- ggplot2::ggplot(DE_res, ggplot2::aes(EffectSize, -log10(p.value))) + 
-    ggplot2::geom_point(color ='#BFBFBF') + 
-    ggplot2::geom_point(data=dplyr::filter(DE_res, label != 'NA'), ggplot2::aes(EffectSize, -log10(p.value), color = label)) +
+    ggplot2::geom_point(fill ='#BFBFBF', color='white', pch=21, stroke=0.1) + 
+    ggplot2::geom_point(data=dplyr::filter(DE_res, label != 'NA'), ggplot2::aes(EffectSize, -log10(p.value), fill = label), color='white', size=1.75, pch=21) +
     ggrepel::geom_text_repel(data = dplyr::filter(DE_res, 
                                            label != 'NA'),
                              ggplot2::aes(label = Gene, color=label),
                              size = 3, show.legend = FALSE) + 
     ggplot2::scale_color_manual(values=c(`more dependent`='#1F295C', `less dependent`='#90191C')) +
+    ggplot2::scale_fill_manual(values=c(`more dependent`='#1F295C', `less dependent`='#90191C')) +
     ggplot2::theme_classic() +
     ggplot2::theme(legend.position = 'bottom',
           text=ggplot2::element_text(size=8),
